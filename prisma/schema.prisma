@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Franqueadora {
+  id_franqueadora  String    @id @default(uuid())
+  nome             String    @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  filiais Filial[]
+  lideres Lider[]
+
+  @@map("franqueadoras")
+}
+
+model Filial {
+  id_filial        String    @id @default(uuid())
+  id_franqueadora  String
+  nome             String    @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  franqueadora  Franqueadora   @relation(fields: [id_franqueadora], references: [id_franqueadora])
+  departamentos Departamento[]
+
+  @@index([id_franqueadora])
+  @@map("filiais")
+}
+
+model Departamento {
+  id_departamento  String    @id @default(uuid())
+  id_filial        String
+  nome             String    @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  filial Filial @relation(fields: [id_filial], references: [id_filial])
+  copas  Copa[]
+
+  @@index([id_filial])
+  @@map("departamentos")
+}
+
+model Role {
+  id_role Int    @id @default(autoincrement())
+  nome    String @db.Text
+
+  usuarios Usuario[]
+
+  @@map("roles")
+}
+
+model NivelUsuario {
+  id_nivel Int    @id @default(autoincrement())
+  nome     String @db.Text
+
+  usuarios Usuario[]
+
+  @@map("niveis_usuario")
+}
+
+model Usuario {
+  id_usuario       String    @id @default(uuid())
+  id_role          Int
+  id_nivel         Int
+  nome             String    @db.Text
+  email            String    @unique @db.Text
+  senha            String    @db.Text
+  relacao          String?
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  role  Role         @relation(fields: [id_role], references: [id_role])
+  nivel NivelUsuario @relation(fields: [id_nivel], references: [id_nivel])
+  anos  UsuarioAno[]
+
+  @@index([email])
+  @@index([id_role])
+  @@index([id_nivel])
+  @@map("usuarios")
+}
+
+model UsuarioAno {
+  id_usuario_ano   String    @id @default(uuid())
+  id_usuario       String
+  ano              Int
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@index([id_usuario])
+  @@map("usuario_ano")
+}
+
+model Copa {
+  id_copa          String    @id @default(uuid())
+  id_departamento  String
+  nome             String    @db.Text
+  objetivo         String?   @db.Text
+  inicio           DateTime  @db.Date
+  fim              DateTime  @db.Date
+  verbo            String?   @db.Text
+  medida           String?   @db.Text
+  de               Decimal?  @db.Decimal(15, 2)
+  ate              Decimal?  @db.Decimal(15, 2)
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  departamento Departamento @relation(fields: [id_departamento], references: [id_departamento])
+  jogos        Jogo[]
+
+  @@index([id_departamento])
+  @@index([inicio, fim])
+  @@map("copas")
+}
+
+model Lider {
+  id_lider         String    @id @default(uuid())
+  id_franqueadora  String?
+  nome             String    @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  franqueadora Franqueadora? @relation(fields: [id_franqueadora], references: [id_franqueadora])
+  jogos        Jogo[]
+
+  @@index([id_franqueadora])
+  @@map("lideres")
+}
+
+model Jogo {
+  id_jogo          String    @id @default(uuid())
+  id_copa          String
+  id_lider         String?
+  nome             String    @db.Text
+  verbo            String?   @db.Text
+  medida           String?   @db.Text
+  de               Decimal?  @db.Decimal(15, 2)
+  para             Decimal?  @db.Decimal(15, 2)
+  data_inicio      DateTime  @db.Date
+  data_fim         DateTime  @db.Date
+  observacao       String?   @db.Text
+  tem_plp          Boolean   @default(false)
+  semanas          Int?
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  copa         Copa          @relation(fields: [id_copa], references: [id_copa])
+  lider        Lider?        @relation(fields: [id_lider], references: [id_lider])
+  previdencias Previdencia[]
+  status       JogoStatus?
+
+  @@index([id_copa])
+  @@index([id_lider])
+  @@map("jogos")
+}
+
+model Previdencia {
+  id_previdencia   String    @id @default(uuid())
+  id_jogo          String
+  unidade_medida   String?   @db.Text
+  placar_atual     Int       @default(0)
+  placar_inicial   Int       @default(0)
+  placar_desejado  Int
+  data_inicio      DateTime  @db.Date
+  data_fim         DateTime  @db.Date
+  inativo_de       DateTime? @db.Date
+  inativo_ate      DateTime? @db.Date
+  plp_media        Decimal?  @db.Decimal(10, 2)
+  verbo            String?   @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  jogo         Jogo                     @relation(fields: [id_jogo], references: [id_jogo])
+  atualizacoes AtualizacaoPrevidencia[]
+  plps         Plp[]
+  observacoes  ObservacaoPrevidencia[]
+
+  @@index([id_jogo])
+  @@map("previdencias")
+}
+
+model AtualizacaoPrevidencia {
+  id_atualizacao   String    @id @default(uuid())
+  id_previdencia   String
+  id_usuario       String?
+  placar_atual     Int
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  previdencia Previdencia @relation(fields: [id_previdencia], references: [id_previdencia])
+  plps        Plp[]
+
+  @@index([id_previdencia])
+  @@map("atualizacoes_previdencia")
+}
+
+model Plp {
+  id_plp           String    @id @default(uuid())
+  id_previdencia   String
+  id_atualizacao   String?
+  respondentes     Int
+  detratores       Int
+  propagadores     Int
+  neutros          Int
+  plp              Decimal   @db.Decimal(10, 2)
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  previdencia Previdencia             @relation(fields: [id_previdencia], references: [id_previdencia])
+  atualizacao AtualizacaoPrevidencia? @relation(fields: [id_atualizacao], references: [id_atualizacao])
+
+  @@index([id_previdencia])
+  @@map("plps")
+}
+
+model ObservacaoPrevidencia {
+  id_observacao    String    @id @default(uuid())
+  id_previdencia   String
+  observacao       String    @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  previdencia Previdencia @relation(fields: [id_previdencia], references: [id_previdencia])
+
+  @@index([id_previdencia])
+  @@map("observacoes_previdencia")
+}
+
+model JogoStatus {
+  id_status        String    @id @default(uuid())
+  id_jogo          String    @unique
+  status           String?   @db.Text
+  valor            String?   @db.Text
+  data_criacao     DateTime  @default(now())
+  data_atualizacao DateTime?
+  deletado_em      DateTime?
+
+  jogo Jogo @relation(fields: [id_jogo], references: [id_jogo])
+
+  @@map("jogos_status")
+}
