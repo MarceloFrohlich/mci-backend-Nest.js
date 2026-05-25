@@ -38,6 +38,7 @@ export class CopasService {
           data: {
             nome: dto.nome,
             id_departamento: idDept,
+            id_lider: dto.id_lider,
             inicio: new Date(dto.inicio),
             fim: new Date(dto.fim),
             objetivo: dto.objetivo ?? null,
@@ -59,6 +60,7 @@ export class CopasService {
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.nome) dados.nome = dto.nome;
+    if (dto.id_lider) dados.id_lider = dto.id_lider;
     if (dto.inicio) dados.inicio = new Date(dto.inicio);
     if (dto.fim) dados.fim = new Date(dto.fim);
     if (dto.objetivo !== undefined) dados.objetivo = dto.objetivo;

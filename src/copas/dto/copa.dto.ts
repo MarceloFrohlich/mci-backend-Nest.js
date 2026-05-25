@@ -11,6 +11,10 @@ export class CriarCopaDto {
   @IsUUID('4', { each: true })
   ids_departamentos: string[];
 
+  @ApiProperty({ description: 'UUID do líder responsável pela copa', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @IsUUID('4')
+  id_lider: string;
+
   @ApiProperty({ description: 'Data de início (formato ISO 8601)', example: '2025-01-01' })
   @IsDateString()
   inicio: string;
@@ -50,6 +54,11 @@ export class AtualizarCopaDto {
   @IsOptional()
   @IsString()
   nome?: string;
+
+  @ApiPropertyOptional({ description: 'UUID do novo líder responsável', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @IsOptional()
+  @IsUUID('4')
+  id_lider?: string;
 
   @ApiPropertyOptional({ description: 'Nova data de início (formato ISO 8601)', example: '2025-01-15' })
   @IsOptional()

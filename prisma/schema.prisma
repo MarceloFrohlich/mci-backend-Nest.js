@@ -107,6 +107,7 @@ model UsuarioAno {
 model Copa {
   id_copa          String    @id @default(uuid())
   id_departamento  String
+  id_lider         String
   nome             String    @db.Text
   objetivo         String?   @db.Text
   inicio           DateTime  @db.Date
@@ -120,9 +121,11 @@ model Copa {
   deletado_em      DateTime?
 
   departamento Departamento @relation(fields: [id_departamento], references: [id_departamento])
+  lider        Lider        @relation(fields: [id_lider], references: [id_lider])
   jogos        Jogo[]
 
   @@index([id_departamento])
+  @@index([id_lider])
   @@index([inicio, fim])
   @@map("copas")
 }
@@ -136,6 +139,7 @@ model Lider {
   deletado_em      DateTime?
 
   franqueadora Franqueadora? @relation(fields: [id_franqueadora], references: [id_franqueadora])
+  copas        Copa[]
   jogos        Jogo[]
 
   @@index([id_franqueadora])
