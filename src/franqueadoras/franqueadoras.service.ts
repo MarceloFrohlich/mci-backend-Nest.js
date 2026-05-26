@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroFranqueadoras } from '../common/utils/permissoes.util';
@@ -42,28 +42,21 @@ export class FranqueadorasService {
   async remover(id: string) {
     await this.buscarPorId(id);
 
-    await this.prisma.$transaction(async (tx) => {
-      const filiais = await tx.filial.findMany({
-        where: { id_franqueadora: id, deletado_em: null },
-        select: { id_filial: true },
-      });
+    const filiaisAtivas = await this.prisma.filial.findMany({
+      where: { id_franqueadora: id, deletado_em: null },
+      select: { id_filial: true, nome: true },
+    });
 
-      for (const filial of filiais) {
-        await tx.departamento.updateMany({
-          where: { id_filial: filial.id_filial, deletado_em: null },
-          data: { deletado_em: new Date() },
-        });
-      }
+    if (filiaisAtivas.length > 0) {
+      const nomes = filiaisAtivas.map((f) => f.nome).join(', ');
+      throw new BadRequestException(
+        `Não é possível remover esta franqueadora pois ela possui ${filiaisAtivas.length} filial(is) ativa(s): ${nomes}. Remova as filiais antes de excluir a franqueadora.`,
+      );
+    }
 
-      await tx.filial.updateMany({
-        where: { id_franqueadora: id, deletado_em: null },
-        data: { deletado_em: new Date() },
-      });
-
-      await tx.franqueadora.update({
-        where: { id_franqueadora: id },
-        data: { deletado_em: new Date() },
-      });
+    await this.prisma.franqueadora.update({
+      where: { id_franqueadora: id },
+      data: { deletado_em: new Date() },
     });
 
     return { mensagem: 'Franqueadora removida com sucesso' };

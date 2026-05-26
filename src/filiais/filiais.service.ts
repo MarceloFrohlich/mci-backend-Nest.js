@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroFiliais } from '../common/utils/permissoes.util';
@@ -46,15 +46,21 @@ export class FiliaisService {
   async remover(id: string) {
     await this.buscarPorId(id);
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.departamento.updateMany({
-        where: { id_filial: id, deletado_em: null },
-        data: { deletado_em: new Date() },
-      });
-      await tx.filial.update({
-        where: { id_filial: id },
-        data: { deletado_em: new Date() },
-      });
+    const departamentosAtivos = await this.prisma.departamento.findMany({
+      where: { id_filial: id, deletado_em: null },
+      select: { id_departamento: true, nome: true },
+    });
+
+    if (departamentosAtivos.length > 0) {
+      const nomes = departamentosAtivos.map((d) => d.nome).join(', ');
+      throw new BadRequestException(
+        `Não é possível remover esta filial pois ela possui ${departamentosAtivos.length} departamento(s) ativo(s): ${nomes}. Remova os departamentos antes de excluir a filial.`,
+      );
+    }
+
+    await this.prisma.filial.update({
+      where: { id_filial: id },
+      data: { deletado_em: new Date() },
     });
 
     return { mensagem: 'Filial removida com sucesso' };
