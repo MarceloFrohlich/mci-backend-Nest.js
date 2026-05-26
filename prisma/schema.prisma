@@ -80,14 +80,29 @@ model Usuario {
   data_atualizacao DateTime?
   deletado_em      DateTime?
 
-  role  Role         @relation(fields: [id_role], references: [id_role])
-  nivel NivelUsuario @relation(fields: [id_nivel], references: [id_nivel])
-  anos  UsuarioAno[]
+  role               Role                    @relation(fields: [id_role], references: [id_role])
+  nivel              NivelUsuario            @relation(fields: [id_nivel], references: [id_nivel])
+  anos               UsuarioAno[]
+  tokens_recuperacao TokenRecuperacaoSenha[]
 
   @@index([email])
   @@index([id_role])
   @@index([id_nivel])
   @@map("usuarios")
+}
+
+model TokenRecuperacaoSenha {
+  id_token     String    @id @default(uuid())
+  id_usuario   String
+  codigo       String    @db.Text
+  expira_em    DateTime
+  usado_em     DateTime?
+  data_criacao DateTime  @default(now())
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@index([id_usuario])
+  @@map("tokens_recuperacao_senha")
 }
 
 model UsuarioAno {

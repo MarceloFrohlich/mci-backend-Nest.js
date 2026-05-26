@@ -1,14 +1,24 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import { LoginDto } from './dto/login.dto';
+import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
+import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
+import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -103,5 +113,104 @@ export class AuthService {
     return this.prisma.usuarioAno.create({
       data: { id_usuario: idUsuario, ano },
     });
+  }
+
+  async esqueciSenha(dto: EsqueciSenhaDto) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: { email: dto.email, deletado_em: null },
+    });
+
+    // Resposta genérica para não revelar se o e-mail existe
+    const resposta = {
+      mensagem: 'Se o e-mail estiver cadastrado, você receberá um código de recuperação em breve.',
+    };
+
+    if (!usuario) return resposta;
+
+    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    const expiraEm = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await this.prisma.tokenRecuperacaoSenha.create({
+      data: {
+        id_usuario: usuario.id_usuario,
+        codigo,
+        expira_em: expiraEm,
+      },
+    });
+
+    await this.mailerService.enviarCodigoRecuperacao(usuario.email, usuario.nome, codigo);
+
+    return resposta;
+  }
+
+  async redefinirSenha(dto: RedefinirSenhaDto) {
+    if (dto.nova_senha !== dto.confirmacao_senha) {
+      throw new BadRequestException('As senhas não coincidem');
+    }
+
+    const usuario = await this.prisma.usuario.findFirst({
+      where: { email: dto.email, deletado_em: null },
+    });
+
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+    const token = await this.prisma.tokenRecuperacaoSenha.findFirst({
+      where: {
+        id_usuario: usuario.id_usuario,
+        codigo: dto.codigo,
+        usado_em: null,
+        expira_em: { gt: new Date() },
+      },
+      orderBy: { data_criacao: 'desc' },
+    });
+
+    if (!token) {
+      throw new BadRequestException('Código inválido ou expirado');
+    }
+
+    const senhaHash = await bcrypt.hash(dto.nova_senha, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.tokenRecuperacaoSenha.update({
+        where: { id_token: token.id_token },
+        data: { usado_em: new Date() },
+      }),
+      this.prisma.usuario.update({
+        where: { id_usuario: usuario.id_usuario },
+        data: { senha: senhaHash, data_atualizacao: new Date() },
+      }),
+    ]);
+
+    return { mensagem: 'Senha redefinida com sucesso' };
+  }
+
+  async alterarSenha(idUsuario: string, dto: AlterarSenhaDto) {
+    if (dto.nova_senha !== dto.confirmacao_senha) {
+      throw new BadRequestException('As senhas não coincidem');
+    }
+
+    const usuario = await this.prisma.usuario.findFirst({
+      where: { id_usuario: idUsuario, deletado_em: null },
+    });
+
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+    const senhaCorreta = await bcrypt.compare(dto.senha_atual, usuario.senha);
+    if (!senhaCorreta) {
+      throw new BadRequestException('Senha atual incorreta');
+    }
+
+    if (dto.senha_atual === dto.nova_senha) {
+      throw new BadRequestException('A nova senha deve ser diferente da senha atual');
+    }
+
+    const senhaHash = await bcrypt.hash(dto.nova_senha, 10);
+
+    await this.prisma.usuario.update({
+      where: { id_usuario: idUsuario },
+      data: { senha: senhaHash, data_atualizacao: new Date() },
+    });
+
+    return { mensagem: 'Senha alterada com sucesso' };
   }
 }
