@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Patch, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -8,6 +8,7 @@ import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { IsInt } from 'class-validator';
 
 class MudarAnoDto {
+  @ApiProperty({ description: 'Ano a ser ativado', example: 2026 })
   @IsInt()
   ano: number;
 }
