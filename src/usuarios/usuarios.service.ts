@@ -18,12 +18,51 @@ const INCLUDE_USUARIO = { role: true, nivel: true };
 export class UsuariosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async resolverRelacoes<T extends { relacao: string | null; id_nivel: number }>(
+    usuarios: T[],
+  ): Promise<(T & { entidade_relacao: object | null })[]> {
+    const ids = (nivel: number) =>
+      usuarios.filter((u) => u.id_nivel === nivel && u.relacao).map((u) => u.relacao as string);
+
+    const [franqueadoras, filiais, departamentos] = await Promise.all([
+      ids(1).length
+        ? this.prisma.franqueadora.findMany({ where: { id_franqueadora: { in: ids(1) } } })
+        : [],
+      ids(2).length
+        ? this.prisma.filial.findMany({
+            where: { id_filial: { in: ids(2) } },
+            include: { franqueadora: true },
+          })
+        : [],
+      ids(3).length
+        ? this.prisma.departamento.findMany({
+            where: { id_departamento: { in: ids(3) } },
+            include: { filial: { include: { franqueadora: true } } },
+          })
+        : [],
+    ]);
+
+    const mapF = Object.fromEntries(franqueadoras.map((f) => [f.id_franqueadora, f]));
+    const mapFi = Object.fromEntries(filiais.map((f) => [f.id_filial, f]));
+    const mapD = Object.fromEntries(departamentos.map((d) => [d.id_departamento, d]));
+
+    return usuarios.map((u) => ({
+      ...u,
+      entidade_relacao:
+        u.id_nivel === 1 ? (mapF[u.relacao!] ?? null)
+        : u.id_nivel === 2 ? (mapFi[u.relacao!] ?? null)
+        : u.id_nivel === 3 ? (mapD[u.relacao!] ?? null)
+        : null,
+    }));
+  }
+
   async listar(solicitante: UsuarioAutenticado) {
-    return this.prisma.usuario.findMany({
+    const usuarios = await this.prisma.usuario.findMany({
       where: filtroUsuarios(solicitante),
       include: INCLUDE_USUARIO,
       orderBy: { nome: 'asc' },
     });
+    return this.resolverRelacoes(usuarios);
   }
 
   async buscarPorId(id: string) {
@@ -32,7 +71,8 @@ export class UsuariosService {
       include: INCLUDE_USUARIO,
     });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
-    return usuario;
+    const [enriquecido] = await this.resolverRelacoes([usuario]);
+    return enriquecido;
   }
 
   async criar(dto: CriarUsuarioDto) {
@@ -100,11 +140,12 @@ export class UsuariosService {
     if (dto.id_role) where.id_role = dto.id_role;
     if (dto.id_nivel) where.id_nivel = dto.id_nivel;
 
-    return this.prisma.usuario.findMany({
+    const usuarios = await this.prisma.usuario.findMany({
       where,
       include: INCLUDE_USUARIO,
       orderBy: { nome: 'asc' },
     });
+    return this.resolverRelacoes(usuarios);
   }
 
   async dadosFormulario() {
