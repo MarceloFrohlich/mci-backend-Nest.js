@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroDepartamentos } from '../common/utils/permissoes.util';
@@ -51,10 +51,24 @@ export class DepartamentosService {
 
   async remover(id: string) {
     await this.buscarPorId(id);
+
+    const copasAtivas = await this.prisma.copa.findMany({
+      where: { id_departamento: id, deletado_em: null },
+      select: { id_copa: true, nome: true },
+    });
+
+    if (copasAtivas.length > 0) {
+      const nomes = copasAtivas.map((c) => c.nome).join(', ');
+      throw new BadRequestException(
+        `Não é possível remover este departamento pois ele possui ${copasAtivas.length} copa(s) ativa(s): ${nomes}. Remova as copas antes de excluir o departamento.`,
+      );
+    }
+
     await this.prisma.departamento.update({
       where: { id_departamento: id },
       data: { deletado_em: new Date() },
     });
+
     return { mensagem: 'Departamento removido com sucesso' };
   }
 
