@@ -1,27 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsUUID } from 'class-validator';
 
 export class AtualizarUsuarioDto {
   @ApiPropertyOptional({ description: 'Novo nome do usuário', example: 'Maria Oliveira Santos' })
   @IsOptional()
-  @IsString()
   nome?: string;
 
   @ApiPropertyOptional({ description: 'Novo e-mail do usuário', example: 'maria.santos@mci.com' })
   @IsOptional()
   @IsEmail()
   email?: string;
-
-  @ApiPropertyOptional({ description: 'Nova senha (mínimo 6 caracteres)', example: 'novaSenha123' })
-  @IsOptional()
-  @IsString()
-  @MinLength(6)
-  senha?: string;
-
-  @ApiPropertyOptional({ description: 'Confirmação da nova senha', example: 'novaSenha123' })
-  @IsOptional()
-  @IsString()
-  confirmacao_senha?: string;
 
   @ApiPropertyOptional({ description: 'ID do perfil: 1 = Admin Global, 2 = Admin Local', example: 1 })
   @IsOptional()

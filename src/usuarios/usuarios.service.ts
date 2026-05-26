@@ -63,10 +63,6 @@ export class UsuariosService {
   async atualizar(id: string, dto: AtualizarUsuarioDto) {
     await this.buscarPorId(id);
 
-    if (dto.senha && dto.senha !== dto.confirmacao_senha) {
-      throw new BadRequestException('As senhas não coincidem');
-    }
-
     const dados: any = { data_atualizacao: new Date() };
 
     if (dto.nome) dados.nome = dto.nome;
@@ -74,7 +70,6 @@ export class UsuariosService {
     if (dto.id_role) dados.id_role = dto.id_role;
     if (dto.id_nivel) dados.id_nivel = dto.id_nivel;
     if (dto.relacao !== undefined) dados.relacao = dto.relacao;
-    if (dto.senha) dados.senha = await bcrypt.hash(dto.senha, 10);
 
     return this.prisma.usuario.update({
       where: { id_usuario: id },

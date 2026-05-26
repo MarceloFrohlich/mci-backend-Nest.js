@@ -84,6 +84,47 @@
             },
             "url": { "raw": "{{base_url}}/auth/ano", "host": ["{{base_url}}"], "path": ["auth", "ano"] }
           }
+        },
+        {
+          "name": "Esqueci Minha Senha",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao.silva@mci.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/esqueci-senha", "host": ["{{base_url}}"], "path": ["auth", "esqueci-senha"] },
+            "description": "Envia um código numérico de 6 dígitos (válido por 15 min) para o e-mail informado. A resposta é sempre a mesma por segurança, independente de o e-mail existir."
+          }
+        },
+        {
+          "name": "Redefinir Senha (com código do e-mail)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao.silva@mci.com\",\n  \"codigo\": \"482931\",\n  \"nova_senha\": \"novaSenha@2026\",\n  \"confirmacao_senha\": \"novaSenha@2026\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/redefinir-senha", "host": ["{{base_url}}"], "path": ["auth", "redefinir-senha"] },
+            "description": "Valida o código de 6 dígitos recebido por e-mail e define a nova senha. O código expira em 15 minutos e só pode ser usado uma vez."
+          }
+        },
+        {
+          "name": "Alterar Senha (usuário logado)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha_atual\": \"senhaAtual123\",\n  \"nova_senha\": \"novaSenha@2026\",\n  \"confirmacao_senha\": \"novaSenha@2026\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/alterar-senha", "host": ["{{base_url}}"], "path": ["auth", "alterar-senha"] },
+            "description": "Rota protegida (JWT). O usuário logado informa a senha atual para confirmação e escolhe a nova senha."
+          }
         }
       ]
     },
@@ -135,14 +176,15 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"João Silva Atualizado\",\n  \"email\": \"joao@email.com\",\n  \"senha\": \"novasenha123\",\n  \"confirmacao_senha\": \"novasenha123\",\n  \"id_role\": 1,\n  \"id_nivel\": 1,\n  \"relacao\": \"UUID-OPCIONAL\"\n}"
+              "raw": "{\n  \"nome\": \"João Silva Atualizado\",\n  \"email\": \"joao.atualizado@email.com\",\n  \"id_role\": 1,\n  \"id_nivel\": 1,\n  \"relacao\": \"UUID-OPCIONAL\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/usuarios/:id",
               "host": ["{{base_url}}"],
               "path": ["usuarios", ":id"],
               "variable": [{ "key": "id", "value": "UUID-AQUI" }]
-            }
+            },
+            "description": "Atualiza dados do usuário (nome, e-mail, role, nível, relação). Senha NÃO é alterada aqui — use PATCH /auth/alterar-senha ou o fluxo de esqueci-senha."
           }
         },
         {
