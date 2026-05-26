@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Patch, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
 import { JogosService } from './jogos.service';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto } from './dto/jogo.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -8,7 +8,9 @@ import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { IsOptional, IsString } from 'class-validator';
 
 class AtualizarStatusDto {
+  @ApiPropertyOptional({ description: 'Status do jogo', example: 'ativo' })
   @IsOptional() @IsString() status?: string;
+  @ApiPropertyOptional({ description: 'Valor associado ao status', example: '100' })
   @IsOptional() @IsString() valor?: string;
 }
 

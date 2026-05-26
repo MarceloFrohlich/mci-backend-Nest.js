@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Patch, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
 import { RelatoriosService } from './relatorios.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { IsOptional, IsString } from 'class-validator';
 
 class StatusDto {
+  @ApiPropertyOptional({ description: 'Status do jogo', example: 'ativo' })
   @IsOptional() @IsString() status?: string;
+  @ApiPropertyOptional({ description: 'Valor associado ao status', example: '100' })
   @IsOptional() @IsString() valor?: string;
 }
 

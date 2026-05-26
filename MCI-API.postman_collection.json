@@ -1,0 +1,1063 @@
+{
+  "info": {
+    "name": "MCI API",
+    "_postman_id": "mci-api-collection",
+    "description": "Coleção completa da MCI API (NestJS + Prisma + PostgreSQL). Rotas protegidas exigem JWT Bearer Token no header Authorization.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token obtido via POST /auth/login"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('token', json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@email.com\",\n  \"senha\": \"senha123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Me (usuário logado)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "Mudar Ano",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ano\": 2026\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/ano", "host": ["{{base_url}}"], "path": ["auth", "ano"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuários",
+      "item": [
+        {
+          "name": "Listar Usuários",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/usuarios", "host": ["{{base_url}}"], "path": ["usuarios"] }
+          }
+        },
+        {
+          "name": "Formulário de Usuário",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/usuarios/formulario", "host": ["{{base_url}}"], "path": ["usuarios", "formulario"] }
+          }
+        },
+        {
+          "name": "Buscar Usuário por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Usuário",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"senha\": \"senha123\",\n  \"confirmacao_senha\": \"senha123\",\n  \"id_role\": 1,\n  \"id_nivel\": 1,\n  \"relacao\": \"UUID-OPCIONAL\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/usuarios", "host": ["{{base_url}}"], "path": ["usuarios"] }
+          }
+        },
+        {
+          "name": "Atualizar Usuário",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva Atualizado\",\n  \"email\": \"joao@email.com\",\n  \"senha\": \"novasenha123\",\n  \"confirmacao_senha\": \"novasenha123\",\n  \"id_role\": 1,\n  \"id_nivel\": 1,\n  \"relacao\": \"UUID-OPCIONAL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Usuário",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Usuários",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João\",\n  \"email\": \"joao@email.com\",\n  \"id_role\": 1,\n  \"id_nivel\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/usuarios/filtrar", "host": ["{{base_url}}"], "path": ["usuarios", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Franqueadoras",
+      "item": [
+        {
+          "name": "Listar Franqueadoras",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/franqueadoras", "host": ["{{base_url}}"], "path": ["franqueadoras"] }
+          }
+        },
+        {
+          "name": "Buscar Franqueadora por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/franqueadoras/:id",
+              "host": ["{{base_url}}"],
+              "path": ["franqueadoras", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Franqueadora",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Franqueadora Exemplo\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/franqueadoras", "host": ["{{base_url}}"], "path": ["franqueadoras"] }
+          }
+        },
+        {
+          "name": "Atualizar Franqueadora",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Franqueadora Atualizada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/franqueadoras/:id",
+              "host": ["{{base_url}}"],
+              "path": ["franqueadoras", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Franqueadora",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/franqueadoras/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["franqueadoras", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Franqueadoras",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Franqueadora\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/franqueadoras/filtrar", "host": ["{{base_url}}"], "path": ["franqueadoras", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filiais",
+      "item": [
+        {
+          "name": "Listar Filiais",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/filiais", "host": ["{{base_url}}"], "path": ["filiais"] }
+          }
+        },
+        {
+          "name": "Listar Franqueadoras das Filiais",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/filiais/franqueadoras", "host": ["{{base_url}}"], "path": ["filiais", "franqueadoras"] }
+          }
+        },
+        {
+          "name": "Buscar Filial por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/filiais/:id",
+              "host": ["{{base_url}}"],
+              "path": ["filiais", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Filial",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Filial Centro\",\n  \"id_franqueadora\": \"UUID-FRANQUEADORA\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/filiais", "host": ["{{base_url}}"], "path": ["filiais"] }
+          }
+        },
+        {
+          "name": "Atualizar Filial",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Filial Centro Atualizada\",\n  \"id_franqueadora\": \"UUID-FRANQUEADORA\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/filiais/:id",
+              "host": ["{{base_url}}"],
+              "path": ["filiais", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Filial",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/filiais/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["filiais", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Filiais",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Filial\",\n  \"id_franqueadora\": \"UUID-OPCIONAL\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/filiais/filtrar", "host": ["{{base_url}}"], "path": ["filiais", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Departamentos",
+      "item": [
+        {
+          "name": "Listar Departamentos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/departamentos", "host": ["{{base_url}}"], "path": ["departamentos"] }
+          }
+        },
+        {
+          "name": "Listar Departamentos com Copa",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/departamentos/com-copa", "host": ["{{base_url}}"], "path": ["departamentos", "com-copa"] }
+          }
+        },
+        {
+          "name": "Listar Filiais dos Departamentos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/departamentos/filiais", "host": ["{{base_url}}"], "path": ["departamentos", "filiais"] }
+          }
+        },
+        {
+          "name": "Buscar Departamento por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/departamentos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["departamentos", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Departamento",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"TI\",\n  \"id_filial\": \"UUID-FILIAL\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/departamentos", "host": ["{{base_url}}"], "path": ["departamentos"] }
+          }
+        },
+        {
+          "name": "Atualizar Departamento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"TI Atualizado\",\n  \"id_filial\": \"UUID-FILIAL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/departamentos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["departamentos", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Departamento",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/departamentos/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["departamentos", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Departamentos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"TI\",\n  \"id_filial\": \"UUID-OPCIONAL\",\n  \"id_franqueadora\": \"UUID-OPCIONAL\",\n  \"com_copa\": true\n}"
+            },
+            "url": { "raw": "{{base_url}}/departamentos/filtrar", "host": ["{{base_url}}"], "path": ["departamentos", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Copas",
+      "item": [
+        {
+          "name": "Listar Copas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/copas", "host": ["{{base_url}}"], "path": ["copas"] }
+          }
+        },
+        {
+          "name": "Listar Copas (Select)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/copas/select", "host": ["{{base_url}}"], "path": ["copas", "select"] }
+          }
+        },
+        {
+          "name": "Copas por Departamento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/copas/por-departamento/:id",
+              "host": ["{{base_url}}"],
+              "path": ["copas", "por-departamento", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-DEPARTAMENTO" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Copa por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/copas/:id",
+              "host": ["{{base_url}}"],
+              "path": ["copas", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Copa",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Copa Q1 2026\",\n  \"ids_departamentos\": [\"UUID-DEPTO-1\", \"UUID-DEPTO-2\"],\n  \"id_lider\": \"UUID-LIDER\",\n  \"inicio\": \"2026-01-01\",\n  \"fim\": \"2026-03-31\",\n  \"objetivo\": \"Aumentar produtividade\",\n  \"verbo\": \"Atingir\",\n  \"medida\": \"pontos\",\n  \"de\": 0,\n  \"ate\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/copas", "host": ["{{base_url}}"], "path": ["copas"] }
+          }
+        },
+        {
+          "name": "Atualizar Copa",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Copa Q1 2026 Atualizada\",\n  \"id_lider\": \"UUID-LIDER\",\n  \"inicio\": \"2026-01-01\",\n  \"fim\": \"2026-03-31\",\n  \"objetivo\": \"Aumentar produtividade em 20%\",\n  \"verbo\": \"Atingir\",\n  \"medida\": \"pontos\",\n  \"de\": 0,\n  \"ate\": 120\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/copas/:id",
+              "host": ["{{base_url}}"],
+              "path": ["copas", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Copa",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/copas/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["copas", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Copas",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Copa\",\n  \"id_departamento\": \"UUID-OPCIONAL\",\n  \"id_filial\": \"UUID-OPCIONAL\",\n  \"id_franqueadora\": \"UUID-OPCIONAL\",\n  \"inicio\": \"2026-01-01\",\n  \"fim\": \"2026-12-31\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/copas/filtrar", "host": ["{{base_url}}"], "path": ["copas", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Líderes",
+      "item": [
+        {
+          "name": "Listar Líderes",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/lideres", "host": ["{{base_url}}"], "path": ["lideres"] }
+          }
+        },
+        {
+          "name": "Buscar Líder por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/lideres/:id",
+              "host": ["{{base_url}}"],
+              "path": ["lideres", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Líder",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria Santos\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/lideres", "host": ["{{base_url}}"], "path": ["lideres"] }
+          }
+        },
+        {
+          "name": "Atualizar Líder",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria Santos Atualizada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lideres/:id",
+              "host": ["{{base_url}}"],
+              "path": ["lideres", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Líder",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/lideres/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["lideres", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Líderes",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/lideres/filtrar", "host": ["{{base_url}}"], "path": ["lideres", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jogos",
+      "item": [
+        {
+          "name": "Listar Jogos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/jogos", "host": ["{{base_url}}"], "path": ["jogos"] }
+          }
+        },
+        {
+          "name": "Listar Jogos (Select)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/jogos/select", "host": ["{{base_url}}"], "path": ["jogos", "select"] }
+          }
+        },
+        {
+          "name": "Jogos por Copa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/jogos/por-copa/:id",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", "por-copa", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-COPA" }]
+            }
+          }
+        },
+        {
+          "name": "Jogos por Departamento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/jogos/por-departamento/:id",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", "por-departamento", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-DEPARTAMENTO" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Jogo por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/jogos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Jogo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_copa\": \"UUID-COPA\",\n  \"id_lider\": \"UUID-LIDER-OPCIONAL\",\n  \"nome\": \"Jogo de Vendas\",\n  \"verbo\": \"Vender\",\n  \"medida\": \"contratos\",\n  \"de\": 0,\n  \"para\": 50,\n  \"data_inicio\": \"2026-01-01\",\n  \"data_fim\": \"2026-03-31\",\n  \"observacao\": \"Observação opcional\",\n  \"tem_plp\": false\n}"
+            },
+            "url": { "raw": "{{base_url}}/jogos", "host": ["{{base_url}}"], "path": ["jogos"] }
+          }
+        },
+        {
+          "name": "Atualizar Jogo",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_lider\": \"UUID-LIDER-OPCIONAL\",\n  \"nome\": \"Jogo de Vendas Atualizado\",\n  \"verbo\": \"Vender\",\n  \"medida\": \"contratos\",\n  \"de\": 0,\n  \"para\": 60,\n  \"data_inicio\": \"2026-01-01\",\n  \"data_fim\": \"2026-03-31\",\n  \"observacao\": \"Observação atualizada\",\n  \"tem_plp\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/jogos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Jogo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/jogos/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Duplicar Jogo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/jogos/:id/duplicar",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", ":id", "duplicar"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Status do Jogo",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ativo\",\n  \"valor\": \"100\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/jogos/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["jogos", ":id", "status"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrar Jogos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Jogo\",\n  \"id_copa\": \"UUID-OPCIONAL\",\n  \"id_departamento\": \"UUID-OPCIONAL\",\n  \"id_lider\": \"UUID-OPCIONAL\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/jogos/filtrar", "host": ["{{base_url}}"], "path": ["jogos", "filtrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Previdências",
+      "item": [
+        {
+          "name": "Previdências por Jogo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/previdencias/por-jogo/:id",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", "por-jogo", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-JOGO" }]
+            }
+          }
+        },
+        {
+          "name": "Previdências por Departamento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/previdencias/por-departamento/:id",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", "por-departamento", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-DEPARTAMENTO" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizações da Previdência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id/atualizacoes",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id", "atualizacoes"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Previdência por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Previdência",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_jogo\": \"UUID-JOGO\",\n  \"unidade_medida\": \"pontos\",\n  \"placar_inicial\": 0,\n  \"placar_desejado\": 100,\n  \"data_inicio\": \"2026-01-01\",\n  \"data_fim\": \"2026-03-31\",\n  \"inativo_de\": \"2026-02-01\",\n  \"inativo_ate\": \"2026-02-07\",\n  \"verbo\": \"Acumular\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/previdencias", "host": ["{{base_url}}"], "path": ["previdencias"] }
+          }
+        },
+        {
+          "name": "Atualizar Previdência",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidade_medida\": \"pontos\",\n  \"placar_inicial\": 0,\n  \"placar_desejado\": 120,\n  \"data_inicio\": \"2026-01-01\",\n  \"data_fim\": \"2026-03-31\",\n  \"inativo_de\": \"2026-02-01\",\n  \"inativo_ate\": \"2026-02-07\",\n  \"verbo\": \"Acumular\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Previdência",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Duplicar Previdência",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id/duplicar",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id", "duplicar"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Placar da Previdência",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placar_atual\": 75\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/previdencias/:id/placar",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", ":id", "placar"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Atualização de Previdência",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/previdencias/atualizacoes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["previdencias", "atualizacoes", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-ATUALIZACAO" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "PLPs",
+      "item": [
+        {
+          "name": "PLPs por Previdência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/plps/por-previdencia/:id",
+              "host": ["{{base_url}}"],
+              "path": ["plps", "por-previdencia", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-PREVIDENCIA" }]
+            }
+          }
+        },
+        {
+          "name": "Criar PLP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_previdencia\": \"UUID-PREVIDENCIA\",\n  \"id_atualizacao\": \"UUID-ATUALIZACAO-OPCIONAL\",\n  \"respondentes\": 100,\n  \"detratores\": 10,\n  \"propagadores\": 60,\n  \"neutros\": 30\n}"
+            },
+            "url": { "raw": "{{base_url}}/plps", "host": ["{{base_url}}"], "path": ["plps"] }
+          }
+        },
+        {
+          "name": "Remover PLP",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/plps/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["plps", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observações",
+      "item": [
+        {
+          "name": "Observações por Previdência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/observacoes/por-previdencia/:id",
+              "host": ["{{base_url}}"],
+              "path": ["observacoes", "por-previdencia", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-PREVIDENCIA" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Observação por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/observacoes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["observacoes", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Criar Observação",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_previdencia\": \"UUID-PREVIDENCIA\",\n  \"observacao\": \"Texto da observação aqui.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/observacoes", "host": ["{{base_url}}"], "path": ["observacoes"] }
+          }
+        },
+        {
+          "name": "Atualizar Observação",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacao\": \"Texto da observação atualizado.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/observacoes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["observacoes", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        },
+        {
+          "name": "Remover Observação",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/observacoes/:id/remover",
+              "host": ["{{base_url}}"],
+              "path": ["observacoes", ":id", "remover"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gráficos",
+      "item": [
+        {
+          "name": "Gráfico de Previdência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/graficos/previdencias/:id",
+              "host": ["{{base_url}}"],
+              "path": ["graficos", "previdencias", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-PREVIDENCIA" }]
+            }
+          }
+        },
+        {
+          "name": "Gráfico de Jogo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/graficos/jogos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["graficos", "jogos", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-JOGO" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Relatórios",
+      "item": [
+        {
+          "name": "Relatório da Copa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/relatorios/copa/:id",
+              "host": ["{{base_url}}"],
+              "path": ["relatorios", "copa", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-COPA" }]
+            }
+          }
+        },
+        {
+          "name": "Status do Relatório (POST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ativo\",\n  \"valor\": \"100\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/relatorios/status/:idJogo",
+              "host": ["{{base_url}}"],
+              "path": ["relatorios", "status", ":idJogo"],
+              "variable": [{ "key": "idJogo", "value": "UUID-JOGO" }]
+            }
+          }
+        },
+        {
+          "name": "Status do Relatório (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ativo\",\n  \"valor\": \"100\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/relatorios/status/:id",
+              "host": ["{{base_url}}"],
+              "path": ["relatorios", "status", ":id"],
+              "variable": [{ "key": "id", "value": "UUID-AQUI" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
