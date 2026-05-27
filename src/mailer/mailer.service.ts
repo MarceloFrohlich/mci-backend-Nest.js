@@ -4,7 +4,12 @@ import { Resend } from 'resend';
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
-  private readonly resend = new Resend(process.env.RESEND_API_KEY);
+
+  private get resend(): Resend {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) throw new Error('RESEND_API_KEY não configurada');
+    return new Resend(apiKey);
+  }
 
   async enviarCodigoRecuperacao(destinatario: string, nome: string, codigo: string) {
     const html = `
