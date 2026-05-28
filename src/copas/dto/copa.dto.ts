@@ -52,41 +52,37 @@ export class CriarCopaDto {
   @IsString()
   objetivo?: string;
 
-  @ApiPropertyOptional({
-    description: '[Opcional] Verbo da meta (ex: Aumentar, Reduzir)',
+  @ApiProperty({
+    description: '[Obrigatório] Verbo da meta (ex: Aumentar, Reduzir)',
     example: 'Aumentar',
     type: String,
   })
-  @IsOptional()
   @IsString()
-  verbo?: string;
+  verbo: string;
 
-  @ApiPropertyOptional({
-    description: '[Opcional] Unidade de medida da meta',
+  @ApiProperty({
+    description: '[Obrigatório] Unidade de medida da meta',
     example: 'contratos',
     type: String,
   })
-  @IsOptional()
   @IsString()
-  medida?: string;
+  medida: string;
 
-  @ApiPropertyOptional({
-    description: '[Opcional] Valor inicial da meta',
+  @ApiProperty({
+    description: '[Obrigatório] Valor inicial da meta',
     example: 100,
     type: Number,
   })
-  @IsOptional()
   @IsNumber()
-  de?: number;
+  de: number;
 
-  @ApiPropertyOptional({
-    description: '[Opcional] Valor final (alvo) da meta',
+  @ApiProperty({
+    description: '[Obrigatório] Valor final (alvo) da meta',
     example: 150,
     type: Number,
   })
-  @IsOptional()
   @IsNumber()
-  ate?: number;
+  ate: number;
 }
 
 export class AtualizarCopaDto {
