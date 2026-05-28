@@ -1,5 +1,44 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsDateString, IsInt, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+
+export class CriarPrevidenciaAninhada {
+  @ApiPropertyOptional({ description: '[Opcional] Unidade de medida do placar', example: 'pontos', type: String })
+  @IsOptional()
+  @IsString()
+  unidade_medida?: string;
+
+  @ApiProperty({ description: '[Obrigatório] Placar inicial (ponto de partida)', example: 0, type: Number })
+  @IsInt()
+  placar_inicial: number;
+
+  @ApiProperty({ description: '[Obrigatório] Placar desejado (meta)', example: 100, type: Number })
+  @IsInt()
+  placar_desejado: number;
+
+  @ApiProperty({ description: '[Obrigatório] Data de início da previdência (AAAA-MM-DD)', example: '2025-01-01', type: String })
+  @IsDateString()
+  data_inicio: string;
+
+  @ApiProperty({ description: '[Obrigatório] Data de fim da previdência (AAAA-MM-DD)', example: '2025-03-31', type: String })
+  @IsDateString()
+  data_fim: string;
+
+  @ApiPropertyOptional({ description: '[Opcional] Início do período inativo (AAAA-MM-DD)', example: '2025-02-01', type: String })
+  @IsOptional()
+  @IsDateString()
+  inativo_de?: string;
+
+  @ApiPropertyOptional({ description: '[Opcional] Fim do período inativo (AAAA-MM-DD)', example: '2025-02-15', type: String })
+  @IsOptional()
+  @IsDateString()
+  inativo_ate?: string;
+
+  @ApiPropertyOptional({ description: '[Opcional] Verbo da meta (ex: Aumentar, Reduzir)', example: 'Aumentar', type: String })
+  @IsOptional()
+  @IsString()
+  verbo?: string;
+}
 
 export class CriarJogoDto {
   @ApiProperty({
@@ -97,6 +136,16 @@ export class CriarJogoDto {
   @IsOptional()
   @IsBoolean()
   tem_plp?: boolean;
+
+  @ApiPropertyOptional({
+    description: '[Opcional] Previdências a serem criadas junto com o jogo',
+    type: [CriarPrevidenciaAninhada],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CriarPrevidenciaAninhada)
+  previdencias?: CriarPrevidenciaAninhada[];
 }
 
 export class AtualizarJogoDto {
