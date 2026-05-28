@@ -15,6 +15,10 @@ export class DateFormatInterceptor implements NestInterceptor {
 
     if (Array.isArray(valor)) return valor.map((item) => this.transformar(item));
 
+    if (typeof valor === 'object' && typeof valor.toNumber === 'function') {
+      return valor.toNumber();
+    }
+
     if (typeof valor === 'object') {
       const resultado: any = {};
       for (const chave of Object.keys(valor)) {
