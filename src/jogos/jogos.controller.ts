@@ -51,7 +51,7 @@ export class JogosController {
     return this.jogosService.buscarPorId(id);
   }
 
-  @ApiOperation({ summary: 'Cria novo jogo dentro de uma copa' })
+  @ApiOperation({ summary: 'Cria jogo em uma ou mais copas (retorna array)' })
   @Post()
   criar(@Body() dto: CriarJogoDto) {
     return this.jogosService.criar(dto);
