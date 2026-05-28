@@ -71,6 +71,7 @@ export class JogosService {
                     inativo_de: prev.inativo_de ? new Date(prev.inativo_de) : null,
                     inativo_ate: prev.inativo_ate ? new Date(prev.inativo_ate) : null,
                     verbo: prev.verbo ?? null,
+                    excluir_periodo: prev.excluir_periodo ?? false,
                   },
                 }),
               ),

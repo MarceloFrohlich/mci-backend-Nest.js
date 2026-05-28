@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CriarPrevidenciaDto {
   @ApiProperty({
@@ -69,6 +69,16 @@ export class CriarPrevidenciaDto {
   @IsOptional()
   @IsString()
   verbo?: string;
+
+  @ApiPropertyOptional({
+    description: '[Opcional] Indica se o período de inatividade deve ser excluído do cálculo de semanas. Padrão: false',
+    example: false,
+    type: Boolean,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  excluir_periodo?: boolean;
 }
 
 export class AtualizarPrevidenciaDto {
@@ -134,6 +144,15 @@ export class AtualizarPrevidenciaDto {
   @IsOptional()
   @IsString()
   verbo?: string;
+
+  @ApiPropertyOptional({
+    description: '[Opcional] Atualiza se o período de inatividade deve ser excluído do cálculo',
+    example: true,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  excluir_periodo?: boolean;
 }
 
 export class AtualizarPlacarDto {
@@ -144,4 +163,34 @@ export class AtualizarPlacarDto {
   })
   @IsInt()
   placar_atual: number;
+}
+
+export class LancarSemanaDto {
+  @ApiProperty({ description: '[Obrigatório] Valor realizado acumulado até esta semana', example: 100, type: Number })
+  @IsInt()
+  realizado: number;
+
+  @ApiProperty({ description: '[Obrigatório] Valor de compromisso da semana', example: 120, type: Number })
+  @IsInt()
+  compromisso: number;
+
+  @ApiPropertyOptional({ description: '[Opcional] Total de entrevistados — necessário quando tem_plp = true', example: 10, type: Number })
+  @IsOptional()
+  @IsInt()
+  entrevistaqtd?: number;
+
+  @ApiPropertyOptional({ description: '[Opcional] Promotores — necessário quando tem_plp = true', example: 9, type: Number })
+  @IsOptional()
+  @IsInt()
+  promotores?: number;
+
+  @ApiPropertyOptional({ description: '[Opcional] Neutros — necessário quando tem_plp = true', example: 1, type: Number })
+  @IsOptional()
+  @IsInt()
+  neutros?: number;
+
+  @ApiPropertyOptional({ description: '[Opcional] Detratores — necessário quando tem_plp = true', example: 0, type: Number })
+  @IsOptional()
+  @IsInt()
+  detratores?: number;
 }

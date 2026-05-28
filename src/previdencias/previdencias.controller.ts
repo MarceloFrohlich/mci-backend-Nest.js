@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PrevidenciasService } from './previdencias.service';
-import { CriarPrevidenciaDto, AtualizarPrevidenciaDto, AtualizarPlacarDto } from './dto/previdencia.dto';
+import { CriarPrevidenciaDto, AtualizarPrevidenciaDto, AtualizarPlacarDto, LancarSemanaDto } from './dto/previdencia.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
@@ -69,6 +69,17 @@ export class PrevidenciasController {
     @UsuarioAtual() usuario: UsuarioAutenticado,
   ) {
     return this.previdenciasService.atualizarPlacar(id, dto, usuario);
+  }
+
+  @ApiOperation({ summary: 'Lança ou corrige o placar de uma semana específica (upsert)' })
+  @Post(':id/semanas/:numero')
+  lancarSemana(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('numero', ParseIntPipe) numero: number,
+    @Body() dto: LancarSemanaDto,
+    @UsuarioAtual() usuario: UsuarioAutenticado,
+  ) {
+    return this.previdenciasService.lancarSemana(id, numero, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove uma atualização de placar específica do histórico' })

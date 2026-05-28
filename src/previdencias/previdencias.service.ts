@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { addWeeks, differenceInWeeks, startOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { calcularMetaSemanal, calcularProgressoPrevidencia } from '../common/utils/calculos.util';
+import { calcularMetaSemanal, calcularPlp, calcularProgressoPrevidencia, gerarSemanas } from '../common/utils/calculos.util';
 import {
   CriarPrevidenciaDto,
   AtualizarPrevidenciaDto,
   AtualizarPlacarDto,
+  LancarSemanaDto,
 } from './dto/previdencia.dto';
 
 const INCLUDE_PREVIDENCIA = {
@@ -18,7 +20,11 @@ const INCLUDE_PREVIDENCIA = {
       },
     },
   },
-  atualizacoes: { where: { deletado_em: null }, orderBy: { data_criacao: 'desc' as const } },
+  atualizacoes: {
+    where: { deletado_em: null },
+    orderBy: { numero_semana: 'asc' as const },
+    include: { plps: { where: { deletado_em: null } } },
+  },
   observacoes: { where: { deletado_em: null }, orderBy: { data_criacao: 'desc' as const } },
 };
 
@@ -40,6 +46,7 @@ export class PrevidenciasService {
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
       ),
+      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes),
     }));
   }
 
@@ -60,6 +67,7 @@ export class PrevidenciasService {
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
       ),
+      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes),
     }));
   }
 
@@ -76,6 +84,11 @@ export class PrevidenciasService {
         previdencia.placar_inicial, previdencia.placar_desejado,
         previdencia.data_inicio, previdencia.data_fim,
       ),
+      semanas: gerarSemanas(
+        previdencia.data_inicio, previdencia.data_fim,
+        previdencia.inativo_de, previdencia.inativo_ate,
+        previdencia.atualizacoes,
+      ),
     };
   }
 
@@ -90,6 +103,7 @@ export class PrevidenciasService {
         inativo_de: dto.inativo_de ? new Date(dto.inativo_de) : null,
         inativo_ate: dto.inativo_ate ? new Date(dto.inativo_ate) : null,
         verbo: dto.verbo ?? null,
+        excluir_periodo: dto.excluir_periodo ?? false,
       },
       include: INCLUDE_PREVIDENCIA,
     });
@@ -114,6 +128,7 @@ export class PrevidenciasService {
     if (dto.inativo_de !== undefined) dados.inativo_de = dto.inativo_de ? new Date(dto.inativo_de) : null;
     if (dto.inativo_ate !== undefined) dados.inativo_ate = dto.inativo_ate ? new Date(dto.inativo_ate) : null;
     if (dto.verbo !== undefined) dados.verbo = dto.verbo;
+    if (dto.excluir_periodo !== undefined) dados.excluir_periodo = dto.excluir_periodo;
 
     const atualizada = await this.prisma.previdencia.update({
       where: { id_previdencia: id },
@@ -128,6 +143,99 @@ export class PrevidenciasService {
         atualizada.data_inicio, atualizada.data_fim,
       ),
     };
+  }
+
+  async lancarSemana(idPrevidencia: string, numeroSemana: number, dto: LancarSemanaDto, solicitante: UsuarioAutenticado) {
+    const previdencia = await this.prisma.previdencia.findFirst({
+      where: { id_previdencia: idPrevidencia, deletado_em: null },
+      include: { jogo: true },
+    });
+    if (!previdencia) throw new NotFoundException('Previdência não encontrada');
+
+    const hoje = startOfDay(new Date());
+    const inicioSemana = addWeeks(previdencia.data_inicio, numeroSemana - 1);
+    if (inicioSemana > hoje) {
+      throw new ForbiddenException('Não é permitido lançar para semanas futuras');
+    }
+
+    const totalSemanas = differenceInWeeks(previdencia.data_fim, previdencia.data_inicio) + 1;
+    if (numeroSemana < 1 || numeroSemana > totalSemanas) {
+      throw new BadRequestException(`Semana inválida. Esta previdência tem ${totalSemanas} semanas (1 a ${totalSemanas})`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const existente = await tx.atualizacaoPrevidencia.findFirst({
+        where: { id_previdencia: idPrevidencia, numero_semana: numeroSemana, deletado_em: null },
+      });
+
+      let idAtualizacao: string;
+
+      if (existente) {
+        await tx.atualizacaoPrevidencia.update({
+          where: { id_atualizacao: existente.id_atualizacao },
+          data: { placar_atual: dto.realizado, compromisso: dto.compromisso, data_atualizacao: new Date() },
+        });
+        idAtualizacao = existente.id_atualizacao;
+      } else {
+        const criada = await tx.atualizacaoPrevidencia.create({
+          data: {
+            id_previdencia: idPrevidencia,
+            id_usuario: solicitante.id_usuario,
+            numero_semana: numeroSemana,
+            placar_atual: dto.realizado,
+            compromisso: dto.compromisso,
+          },
+        });
+        idAtualizacao = criada.id_atualizacao;
+      }
+
+      if (previdencia.jogo.tem_plp && dto.entrevistaqtd != null) {
+        const score = calcularPlp(dto.promotores ?? 0, dto.detratores ?? 0, dto.entrevistaqtd);
+        const plpExistente = await tx.plp.findFirst({
+          where: { id_atualizacao: idAtualizacao, deletado_em: null },
+        });
+
+        if (plpExistente) {
+          await tx.plp.update({
+            where: { id_plp: plpExistente.id_plp },
+            data: {
+              respondentes: dto.entrevistaqtd,
+              propagadores: dto.promotores ?? 0,
+              detratores: dto.detratores ?? 0,
+              neutros: dto.neutros ?? 0,
+              plp: score,
+              data_atualizacao: new Date(),
+            },
+          });
+        } else {
+          await tx.plp.create({
+            data: {
+              id_previdencia: idPrevidencia,
+              id_atualizacao: idAtualizacao,
+              respondentes: dto.entrevistaqtd,
+              propagadores: dto.promotores ?? 0,
+              detratores: dto.detratores ?? 0,
+              neutros: dto.neutros ?? 0,
+              plp: score,
+            },
+          });
+        }
+      }
+
+      const ultimoLancamento = await tx.atualizacaoPrevidencia.findFirst({
+        where: { id_previdencia: idPrevidencia, deletado_em: null },
+        orderBy: { numero_semana: 'desc' },
+      });
+
+      if (ultimoLancamento) {
+        await tx.previdencia.update({
+          where: { id_previdencia: idPrevidencia },
+          data: { placar_atual: ultimoLancamento.placar_atual, data_atualizacao: new Date() },
+        });
+      }
+    });
+
+    return this.buscarPorId(idPrevidencia);
   }
 
   async remover(id: string) {
