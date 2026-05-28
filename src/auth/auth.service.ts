@@ -12,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
 import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto';
+import { NIVEL_DEPARTAMENTO, NIVEL_FILIAL, NIVEL_FRANQUEADORA, ROLE_ADMIN_GLOBAL } from '../common/utils/permissoes.util';
 
 @Injectable()
 export class AuthService {
@@ -48,6 +49,13 @@ export class AuthService {
     const payload = { sub: usuario.id_usuario, email: usuario.email };
     const token = this.jwtService.sign(payload);
 
+    const hierarquia = await this.buscarHierarquia(
+      usuario.id_role,
+      usuario.id_nivel,
+      usuario.relacao,
+      usuarioAno.ano,
+    );
+
     return {
       access_token: token,
       token_type: 'bearer',
@@ -62,6 +70,7 @@ export class AuthService {
         id_nivel: usuario.id_nivel,
         relacao: usuario.relacao,
         ano_ativo: usuarioAno.ano,
+        hierarquia,
       },
     };
   }
@@ -84,6 +93,13 @@ export class AuthService {
 
     const anoAtivo = usuario.anos[0]?.ano ?? new Date().getFullYear();
 
+    const hierarquia = await this.buscarHierarquia(
+      usuario.id_role,
+      usuario.id_nivel,
+      usuario.relacao,
+      anoAtivo,
+    );
+
     return {
       id_usuario: usuario.id_usuario,
       nome: usuario.nome,
@@ -94,6 +110,7 @@ export class AuthService {
       id_nivel: usuario.id_nivel,
       relacao: usuario.relacao,
       ano_ativo: anoAtivo,
+      hierarquia,
     };
   }
 
@@ -182,6 +199,62 @@ export class AuthService {
     ]);
 
     return { mensagem: 'Senha redefinida com sucesso' };
+  }
+
+  private async buscarHierarquia(idRole: number, idNivel: number, relacao: string | null, anoAtivo: number) {
+    if (idRole === ROLE_ADMIN_GLOBAL || !relacao) return null;
+
+    const filtroCopas = {
+      deletado_em: null,
+      inicio: { gte: new Date(`${anoAtivo}-01-01`) },
+      fim: { lte: new Date(`${anoAtivo}-12-31`) },
+    };
+
+    const incluirCopas = {
+      where: filtroCopas,
+      include: {
+        jogos: {
+          where: { deletado_em: null },
+          orderBy: { nome: 'asc' as const },
+        },
+      },
+      orderBy: { nome: 'asc' as const },
+    };
+
+    const incluirDepartamentos = {
+      where: { deletado_em: null },
+      include: { copas: incluirCopas },
+      orderBy: { nome: 'asc' as const },
+    };
+
+    if (idNivel === NIVEL_DEPARTAMENTO) {
+      return this.prisma.departamento.findFirst({
+        where: { id_departamento: relacao, deletado_em: null },
+        include: { copas: incluirCopas },
+      });
+    }
+
+    if (idNivel === NIVEL_FILIAL) {
+      return this.prisma.filial.findFirst({
+        where: { id_filial: relacao, deletado_em: null },
+        include: { departamentos: incluirDepartamentos },
+      });
+    }
+
+    if (idNivel === NIVEL_FRANQUEADORA) {
+      return this.prisma.franqueadora.findFirst({
+        where: { id_franqueadora: relacao, deletado_em: null },
+        include: {
+          filiais: {
+            where: { deletado_em: null },
+            include: { departamentos: incluirDepartamentos },
+            orderBy: { nome: 'asc' },
+          },
+        },
+      });
+    }
+
+    return null;
   }
 
   async alterarSenha(idUsuario: string, dto: AlterarSenhaDto) {
