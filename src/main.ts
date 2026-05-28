@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { FiltroHttpException } from './common/filters/http-exception.filter';
+import { DateFormatInterceptor } from './common/interceptors/date-format.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,6 +24,7 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new FiltroHttpException());
+  app.useGlobalInterceptors(new DateFormatInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('MCI API')
