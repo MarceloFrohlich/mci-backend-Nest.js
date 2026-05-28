@@ -2,91 +2,163 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CriarPrevidenciaDto {
-  @ApiProperty({ description: 'UUID do jogo vinculado', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @ApiProperty({
+    description: '[Obrigatório] UUID do jogo ao qual esta previdência pertence',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    type: String,
+  })
   @IsUUID()
   id_jogo: string;
 
-  @ApiPropertyOptional({ description: 'Unidade de medida do placar', example: 'pontos' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Unidade de medida do placar (ex: pontos, vendas, contratos)',
+    example: 'pontos',
+    type: String,
+  })
   @IsOptional()
   @IsString()
   unidade_medida?: string;
 
-  @ApiProperty({ description: 'Placar inicial (valor de partida)', example: 0 })
+  @ApiProperty({
+    description: '[Obrigatório] Placar inicial — valor de partida da previdência',
+    example: 0,
+    type: Number,
+  })
   @IsInt()
   placar_inicial: number;
 
-  @ApiProperty({ description: 'Placar desejado (meta a atingir)', example: 100 })
+  @ApiProperty({
+    description: '[Obrigatório] Placar desejado — meta a ser atingida',
+    example: 100,
+    type: Number,
+  })
   @IsInt()
   placar_desejado: number;
 
-  @ApiProperty({ description: 'Data de início (formato ISO 8601)', example: '2025-01-01' })
+  @ApiProperty({
+    description: '[Obrigatório] Data de início da previdência (formato ISO 8601: AAAA-MM-DD)',
+    example: '2025-01-01',
+    type: String,
+  })
   @IsDateString()
   data_inicio: string;
 
-  @ApiProperty({ description: 'Data de fim (formato ISO 8601)', example: '2025-03-31' })
+  @ApiProperty({
+    description: '[Obrigatório] Data de fim da previdência (formato ISO 8601: AAAA-MM-DD)',
+    example: '2025-03-31',
+    type: String,
+  })
   @IsDateString()
   data_fim: string;
 
-  @ApiPropertyOptional({ description: 'Data de início do período inativo (formato ISO 8601)', example: '2025-02-01' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Data de início do período inativo — semanas sem lançamento de placar (formato ISO 8601)',
+    example: '2025-02-01',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   inativo_de?: string;
 
-  @ApiPropertyOptional({ description: 'Data de fim do período inativo (formato ISO 8601)', example: '2025-02-15' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Data de fim do período inativo (formato ISO 8601)',
+    example: '2025-02-15',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   inativo_ate?: string;
 
-  @ApiPropertyOptional({ description: 'Verbo da meta (ex: Aumentar, Manter)', example: 'Aumentar' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Verbo da meta (ex: Aumentar, Manter, Reduzir)',
+    example: 'Aumentar',
+    type: String,
+  })
   @IsOptional()
   @IsString()
   verbo?: string;
 }
 
 export class AtualizarPrevidenciaDto {
-  @ApiPropertyOptional({ description: 'Nova unidade de medida', example: 'vendas' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Nova unidade de medida do placar',
+    example: 'vendas',
+    type: String,
+  })
   @IsOptional()
   @IsString()
   unidade_medida?: string;
 
-  @ApiPropertyOptional({ description: 'Novo placar inicial', example: 10 })
+  @ApiPropertyOptional({
+    description: '[Opcional] Novo placar inicial',
+    example: 10,
+    type: Number,
+  })
   @IsOptional()
   @IsInt()
   placar_inicial?: number;
 
-  @ApiPropertyOptional({ description: 'Novo placar desejado (meta)', example: 120 })
+  @ApiPropertyOptional({
+    description: '[Opcional] Novo placar desejado (meta)',
+    example: 120,
+    type: Number,
+  })
   @IsOptional()
   @IsInt()
   placar_desejado?: number;
 
-  @ApiPropertyOptional({ description: 'Nova data de início (formato ISO 8601)', example: '2025-01-15' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Nova data de início (formato ISO 8601: AAAA-MM-DD)',
+    example: '2025-01-15',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   data_inicio?: string;
 
-  @ApiPropertyOptional({ description: 'Nova data de fim (formato ISO 8601)', example: '2025-04-30' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Nova data de fim (formato ISO 8601: AAAA-MM-DD)',
+    example: '2025-04-30',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   data_fim?: string;
 
-  @ApiPropertyOptional({ description: 'Nova data de início do período inativo', example: '2025-02-10' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Nova data de início do período inativo (formato ISO 8601)',
+    example: '2025-02-10',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   inativo_de?: string;
 
-  @ApiPropertyOptional({ description: 'Nova data de fim do período inativo', example: '2025-02-20' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Nova data de fim do período inativo (formato ISO 8601)',
+    example: '2025-02-20',
+    type: String,
+  })
   @IsOptional()
   @IsDateString()
   inativo_ate?: string;
 
-  @ApiPropertyOptional({ description: 'Novo verbo da meta', example: 'Manter' })
+  @ApiPropertyOptional({
+    description: '[Opcional] Novo verbo da meta',
+    example: 'Manter',
+    type: String,
+  })
   @IsOptional()
   @IsString()
   verbo?: string;
 }
 
 export class AtualizarPlacarDto {
-  @ApiProperty({ description: 'Novo valor do placar atual', example: 75 })
+  @ApiProperty({
+    description: '[Obrigatório] Novo valor do placar atual — representa o progresso acumulado até o momento',
+    example: 75,
+    type: Number,
+  })
   @IsInt()
   placar_atual: number;
 }
