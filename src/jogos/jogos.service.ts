@@ -37,21 +37,48 @@ export class JogosService {
   }
 
   async criar(dto: CriarJogoDto) {
-    return this.prisma.jogo.create({
-      data: {
-        id_copa: dto.id_copa,
-        id_lider: dto.id_lider ?? null,
-        nome: dto.nome,
-        verbo: dto.verbo ?? null,
-        medida: dto.medida ?? null,
-        de: dto.de ?? null,
-        para: dto.para ?? null,
-        data_inicio: new Date(dto.data_inicio),
-        data_fim: new Date(dto.data_fim),
-        observacao: dto.observacao ?? null,
-        tem_plp: dto.tem_plp ?? false,
-      },
-      include: INCLUDE_JOGO,
+    return this.prisma.$transaction(async (tx) => {
+      const jogo = await tx.jogo.create({
+        data: {
+          id_copa: dto.id_copa,
+          id_lider: dto.id_lider ?? null,
+          nome: dto.nome,
+          verbo: dto.verbo ?? null,
+          medida: dto.medida ?? null,
+          de: dto.de ?? null,
+          para: dto.para ?? null,
+          data_inicio: new Date(dto.data_inicio),
+          data_fim: new Date(dto.data_fim),
+          observacao: dto.observacao ?? null,
+          tem_plp: dto.tem_plp ?? false,
+        },
+      });
+
+      if (dto.previdencias && dto.previdencias.length > 0) {
+        await Promise.all(
+          dto.previdencias.map((prev) =>
+            tx.previdencia.create({
+              data: {
+                id_jogo: jogo.id_jogo,
+                unidade_medida: prev.unidade_medida ?? null,
+                placar_inicial: prev.placar_inicial,
+                placar_atual: prev.placar_inicial,
+                placar_desejado: prev.placar_desejado,
+                data_inicio: new Date(prev.data_inicio),
+                data_fim: new Date(prev.data_fim),
+                inativo_de: prev.inativo_de ? new Date(prev.inativo_de) : null,
+                inativo_ate: prev.inativo_ate ? new Date(prev.inativo_ate) : null,
+                verbo: prev.verbo ?? null,
+              },
+            }),
+          ),
+        );
+      }
+
+      return tx.jogo.findFirst({
+        where: { id_jogo: jogo.id_jogo },
+        include: INCLUDE_JOGO,
+      });
     });
   }
 
