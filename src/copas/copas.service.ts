@@ -6,6 +6,7 @@ import { CriarCopaDto, AtualizarCopaDto, FiltrarCopaDto } from './dto/copa.dto';
 
 const INCLUDE_COPA = {
   departamento: { include: { filial: { include: { franqueadora: true } } } },
+  lider: true,
 };
 
 @Injectable()
