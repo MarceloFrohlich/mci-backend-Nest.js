@@ -55,6 +55,8 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true,
       tagsSorter: 'alpha',
+      defaultModelsExpandDepth: 3,
+      defaultModelExpandDepth: 3,
     },
     customSiteTitle: 'MCI API — Documentação',
   });
