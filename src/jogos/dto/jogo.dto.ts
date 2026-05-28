@@ -42,12 +42,13 @@ export class CriarPrevidenciaAninhada {
 
 export class CriarJogoDto {
   @ApiProperty({
-    description: '[Obrigatório] UUID da copa à qual este jogo pertence',
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    type: String,
+    description: '[Obrigatório] Lista de UUIDs das copas nas quais o jogo será criado',
+    example: ['a1b2c3d4-e5f6-7890-abcd-ef1234567890'],
+    type: [String],
   })
-  @IsUUID()
-  id_copa: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  ids_copas: string[];
 
   @ApiPropertyOptional({
     description: '[Opcional] UUID do líder responsável pelo jogo',
