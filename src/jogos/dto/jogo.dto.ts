@@ -8,10 +8,6 @@ export class CriarPrevidenciaAninhada {
   @IsString()
   unidade_medida?: string;
 
-  @ApiProperty({ description: '[Obrigatório] Placar inicial (ponto de partida)', example: 0, type: Number })
-  @IsInt()
-  placar_inicial: number;
-
   @ApiProperty({ description: '[Obrigatório] Placar desejado (meta)', example: 100, type: Number })
   @IsInt()
   placar_desejado: number;

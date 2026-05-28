@@ -84,8 +84,6 @@ export class PrevidenciasService {
       data: {
         id_jogo: dto.id_jogo,
         unidade_medida: dto.unidade_medida ?? null,
-        placar_inicial: dto.placar_inicial,
-        placar_atual: dto.placar_inicial,
         placar_desejado: dto.placar_desejado,
         data_inicio: new Date(dto.data_inicio),
         data_fim: new Date(dto.data_fim),
@@ -110,7 +108,6 @@ export class PrevidenciasService {
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.unidade_medida !== undefined) dados.unidade_medida = dto.unidade_medida;
-    if (dto.placar_inicial !== undefined) dados.placar_inicial = dto.placar_inicial;
     if (dto.placar_desejado !== undefined) dados.placar_desejado = dto.placar_desejado;
     if (dto.data_inicio !== undefined) dados.data_inicio = new Date(dto.data_inicio);
     if (dto.data_fim !== undefined) dados.data_fim = new Date(dto.data_fim);
