@@ -65,8 +65,6 @@ export class JogosService {
                   data: {
                     id_jogo: jogo.id_jogo,
                     unidade_medida: prev.unidade_medida ?? null,
-                    placar_inicial: prev.placar_inicial,
-                    placar_atual: prev.placar_inicial,
                     placar_desejado: prev.placar_desejado,
                     data_inicio: new Date(prev.data_inicio),
                     data_fim: new Date(prev.data_fim),

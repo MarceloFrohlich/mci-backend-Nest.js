@@ -20,14 +20,6 @@ export class CriarPrevidenciaDto {
   unidade_medida?: string;
 
   @ApiProperty({
-    description: '[Obrigatório] Placar inicial — valor de partida da previdência',
-    example: 0,
-    type: Number,
-  })
-  @IsInt()
-  placar_inicial: number;
-
-  @ApiProperty({
     description: '[Obrigatório] Placar desejado — meta a ser atingida',
     example: 100,
     type: Number,
@@ -88,15 +80,6 @@ export class AtualizarPrevidenciaDto {
   @IsOptional()
   @IsString()
   unidade_medida?: string;
-
-  @ApiPropertyOptional({
-    description: '[Opcional] Novo placar inicial',
-    example: 10,
-    type: Number,
-  })
-  @IsOptional()
-  @IsInt()
-  placar_inicial?: number;
 
   @ApiPropertyOptional({
     description: '[Opcional] Novo placar desejado (meta)',
