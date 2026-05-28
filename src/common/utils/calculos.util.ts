@@ -1,4 +1,92 @@
-import { differenceInWeeks, isWithinInterval, parseISO } from 'date-fns';
+import { addDays, addWeeks, differenceInWeeks, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+
+export interface LancamentoSemana {
+  id_atualizacao: string;
+  realizado: number;
+  compromisso: number | null;
+  plp: { entrevistaqtd: number; promotores: number; neutros: number; detratores: number; score: number } | null;
+}
+
+export interface SemanaPrevidencia {
+  numero_semana: number;
+  data_inicio_semana: Date;
+  data_fim_semana: Date;
+  inativa: boolean;
+  status: 'concluida' | 'disponivel' | 'indisponivel' | 'inativa';
+  permite_lancamento: boolean;
+  lancamento: LancamentoSemana | null;
+}
+
+export function gerarSemanas(
+  dataInicio: Date,
+  dataFim: Date,
+  inativoDe: Date | null,
+  inativoAte: Date | null,
+  atualizacoes: any[],
+): SemanaPrevidencia[] {
+  const hoje = startOfDay(new Date());
+  const totalSemanas = differenceInWeeks(dataFim, dataInicio) + 1;
+  const semanas: SemanaPrevidencia[] = [];
+
+  for (let i = 1; i <= totalSemanas; i++) {
+    const inicioSemana = addWeeks(dataInicio, i - 1);
+    const fimSemana = i < totalSemanas ? addDays(addWeeks(dataInicio, i), -1) : dataFim;
+
+    const inativa = !!(
+      inativoDe &&
+      inativoAte &&
+      (isWithinInterval(inicioSemana, { start: inativoDe, end: inativoAte }) ||
+        isWithinInterval(fimSemana, { start: inativoDe, end: inativoAte }))
+    );
+
+    const atualizacao = atualizacoes.find((a) => a.numero_semana === i && !a.deletado_em);
+    const plpRaw = atualizacao?.plps?.[0] ?? null;
+
+    let status: SemanaPrevidencia['status'];
+    let permite_lancamento: boolean;
+
+    if (inativa) {
+      status = 'inativa';
+      permite_lancamento = false;
+    } else if (atualizacao) {
+      status = 'concluida';
+      permite_lancamento = inicioSemana <= hoje;
+    } else if (inicioSemana <= hoje) {
+      status = 'disponivel';
+      permite_lancamento = true;
+    } else {
+      status = 'indisponivel';
+      permite_lancamento = false;
+    }
+
+    semanas.push({
+      numero_semana: i,
+      data_inicio_semana: inicioSemana,
+      data_fim_semana: fimSemana,
+      inativa,
+      status,
+      permite_lancamento,
+      lancamento: atualizacao
+        ? {
+            id_atualizacao: atualizacao.id_atualizacao,
+            realizado: atualizacao.placar_atual,
+            compromisso: atualizacao.compromisso ?? null,
+            plp: plpRaw
+              ? {
+                  entrevistaqtd: plpRaw.respondentes,
+                  promotores: plpRaw.propagadores,
+                  neutros: plpRaw.neutros,
+                  detratores: plpRaw.detratores,
+                  score: Number(plpRaw.plp),
+                }
+              : null,
+          }
+        : null,
+    });
+  }
+
+  return semanas;
+}
 
 export function calcularMetaSemanal(
   placarInicial: number,

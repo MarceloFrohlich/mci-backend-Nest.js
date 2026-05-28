@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsInt, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
+
 export class CriarPrevidenciaAninhada {
   @ApiPropertyOptional({ description: '[Opcional] Unidade de medida do placar', example: 'pontos', type: String })
   @IsOptional()
@@ -34,6 +35,11 @@ export class CriarPrevidenciaAninhada {
   @IsOptional()
   @IsString()
   verbo?: string;
+
+  @ApiPropertyOptional({ description: '[Opcional] Indica se o período de inatividade deve ser excluído do cálculo de semanas. Padrão: false', example: false, type: Boolean, default: false })
+  @IsOptional()
+  @IsBoolean()
+  excluir_periodo?: boolean;
 }
 
 export class CriarJogoDto {
