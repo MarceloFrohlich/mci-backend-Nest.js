@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
 
 const transformarData = ({ value }: { value: unknown }) => (value === '' || value === null ? undefined : value);
 
@@ -52,7 +52,8 @@ export class CriarPrevidenciaDto {
     type: String,
   })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_ate)
+  @IsNotEmpty({ message: 'obrigatório quando o fim do período inativo está preenchido' })
   @IsDateString()
   inativo_de?: string;
 
@@ -62,7 +63,8 @@ export class CriarPrevidenciaDto {
     type: String,
   })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_de)
+  @IsNotEmpty({ message: 'obrigatório quando o início do período inativo está preenchido' })
   @IsDateString()
   inativo_ate?: string;
 
@@ -129,7 +131,8 @@ export class AtualizarPrevidenciaDto {
     type: String,
   })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_ate)
+  @IsNotEmpty({ message: 'obrigatório quando o fim do período inativo está preenchido' })
   @IsDateString()
   inativo_de?: string;
 
@@ -139,7 +142,8 @@ export class AtualizarPrevidenciaDto {
     type: String,
   })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_de)
+  @IsNotEmpty({ message: 'obrigatório quando o início do período inativo está preenchido' })
   @IsDateString()
   inativo_ate?: string;
 
