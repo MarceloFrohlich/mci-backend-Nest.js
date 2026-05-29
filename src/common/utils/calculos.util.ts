@@ -1,4 +1,12 @@
-import { addDays, addWeeks, differenceInWeeks, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+import { addDays, addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+
+function semanaJaDisponivel(inicioSemana: Date, hoje: Date): boolean {
+  const anoSemana = getISOWeekYear(inicioSemana);
+  const numSemana = getISOWeek(inicioSemana);
+  const anoHoje = getISOWeekYear(hoje);
+  const numHoje = getISOWeek(hoje);
+  return anoSemana < anoHoje || (anoSemana === anoHoje && numSemana <= numHoje);
+}
 
 export interface LancamentoSemana {
   id_atualizacao: string;
@@ -45,13 +53,15 @@ export function gerarSemanas(
     let status: SemanaPrevidencia['status'];
     let permite_lancamento: boolean;
 
+    const disponivel = semanaJaDisponivel(inicioSemana, hoje);
+
     if (inativa) {
       status = 'inativa';
       permite_lancamento = false;
     } else if (atualizacao) {
       status = 'concluida';
-      permite_lancamento = inicioSemana <= hoje;
-    } else if (inicioSemana <= hoje) {
+      permite_lancamento = disponivel;
+    } else if (disponivel) {
       status = 'disponivel';
       permite_lancamento = true;
     } else {
