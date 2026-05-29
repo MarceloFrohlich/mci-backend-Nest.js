@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+
+const transformarData = ({ value }: { value: unknown }) => (value === '' || value === null ? undefined : value);
 
 export class CriarPrevidenciaDto {
   @ApiProperty({
@@ -48,6 +51,7 @@ export class CriarPrevidenciaDto {
     example: '2025-02-01',
     type: String,
   })
+  @Transform(transformarData)
   @IsOptional()
   @IsDateString()
   inativo_de?: string;
@@ -57,6 +61,7 @@ export class CriarPrevidenciaDto {
     example: '2025-02-15',
     type: String,
   })
+  @Transform(transformarData)
   @IsOptional()
   @IsDateString()
   inativo_ate?: string;
@@ -123,6 +128,7 @@ export class AtualizarPrevidenciaDto {
     example: '2025-02-10',
     type: String,
   })
+  @Transform(transformarData)
   @IsOptional()
   @IsDateString()
   inativo_de?: string;
@@ -132,6 +138,7 @@ export class AtualizarPrevidenciaDto {
     example: '2025-02-20',
     type: String,
   })
+  @Transform(transformarData)
   @IsOptional()
   @IsDateString()
   inativo_ate?: string;
