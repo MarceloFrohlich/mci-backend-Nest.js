@@ -46,7 +46,7 @@ export class PrevidenciasService {
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
       ),
-      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes),
+      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes).filter(s => !s.inativa),
     }));
   }
 
@@ -67,7 +67,7 @@ export class PrevidenciasService {
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
       ),
-      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes),
+      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes).filter(s => !s.inativa),
     }));
   }
 
@@ -88,7 +88,7 @@ export class PrevidenciasService {
         previdencia.data_inicio, previdencia.data_fim,
         previdencia.inativo_de, previdencia.inativo_ate,
         previdencia.atualizacoes,
-      ),
+      ).filter(s => !s.inativa),
     };
   }
 
@@ -161,6 +161,15 @@ export class PrevidenciasService {
     const totalSemanas = differenceInWeeks(previdencia.data_fim, previdencia.data_inicio) + 1;
     if (numeroSemana < 1 || numeroSemana > totalSemanas) {
       throw new BadRequestException(`Semana inválida. Esta previdência tem ${totalSemanas} semanas (1 a ${totalSemanas})`);
+    }
+
+    if (previdencia.inativo_de && previdencia.inativo_ate) {
+      const fimSemana = addWeeks(inicioSemana, 1);
+      const dentroDoInativo =
+        inicioSemana < previdencia.inativo_ate && fimSemana > previdencia.inativo_de;
+      if (dentroDoInativo) {
+        throw new ForbiddenException('Não é permitido lançar em semanas do período de inatividade');
+      }
     }
 
     await this.prisma.$transaction(async (tx) => {
