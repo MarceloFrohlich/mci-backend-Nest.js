@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { addWeeks, differenceInWeeks, startOfDay } from 'date-fns';
+import { addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, startOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { calcularMetaSemanal, calcularPlp, calcularProgressoPrevidencia, gerarSemanas } from '../common/utils/calculos.util';
@@ -154,7 +154,12 @@ export class PrevidenciasService {
 
     const hoje = startOfDay(new Date());
     const inicioSemana = addWeeks(previdencia.data_inicio, numeroSemana - 1);
-    if (inicioSemana > hoje) {
+    const semanaAtualDoAno = getISOWeek(hoje);
+    const anoAtual = getISOWeekYear(hoje);
+    const anoSemana = getISOWeekYear(inicioSemana);
+    const numSemana = getISOWeek(inicioSemana);
+    const ehFutura = anoSemana > anoAtual || (anoSemana === anoAtual && numSemana > semanaAtualDoAno);
+    if (ehFutura) {
       throw new ForbiddenException('Não é permitido lançar para semanas futuras');
     }
 
