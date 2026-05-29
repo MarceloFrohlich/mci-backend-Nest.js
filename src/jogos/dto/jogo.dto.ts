@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsInt, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateIf, ValidateNested } from 'class-validator';
 
 const transformarData = ({ value }: { value: unknown }) => (value === '' || value === null ? undefined : value);
 
@@ -25,13 +25,15 @@ export class CriarPrevidenciaAninhada {
 
   @ApiPropertyOptional({ description: '[Opcional] Início do período inativo (AAAA-MM-DD)', example: '2025-02-01', type: String })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_ate)
+  @IsNotEmpty({ message: 'obrigatório quando o fim do período inativo está preenchido' })
   @IsDateString()
   inativo_de?: string;
 
   @ApiPropertyOptional({ description: '[Opcional] Fim do período inativo (AAAA-MM-DD)', example: '2025-02-15', type: String })
   @Transform(transformarData)
-  @IsOptional()
+  @ValidateIf((o) => !!o.inativo_de)
+  @IsNotEmpty({ message: 'obrigatório quando o início do período inativo está preenchido' })
   @IsDateString()
   inativo_ate?: string;
 
