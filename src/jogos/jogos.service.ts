@@ -1,8 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { differenceInWeeks } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto } from './dto/jogo.dto';
+
+function calcularSemanas(dataInicio: Date, dataFim: Date): number {
+  return differenceInWeeks(dataFim, dataInicio) + 1;
+}
 
 const INCLUDE_JOGO = {
   copa: {
@@ -42,6 +47,8 @@ export class JogosService {
     return Promise.all(
       copas.map((idCopa) =>
         this.prisma.$transaction(async (tx) => {
+          const dataInicio = new Date(dto.data_inicio);
+          const dataFim = new Date(dto.data_fim);
           const jogo = await tx.jogo.create({
             data: {
               id_copa: idCopa,
@@ -51,10 +58,11 @@ export class JogosService {
               medida: dto.medida ?? null,
               de: dto.de ?? null,
               para: dto.para ?? null,
-              data_inicio: new Date(dto.data_inicio),
-              data_fim: new Date(dto.data_fim),
+              data_inicio: dataInicio,
+              data_fim: dataFim,
               observacao: dto.observacao ?? null,
               tem_plp: dto.tem_plp ?? false,
+              semanas: calcularSemanas(dataInicio, dataFim),
             },
           });
 
@@ -101,6 +109,13 @@ export class JogosService {
     if (dto.data_fim !== undefined) dados.data_fim = new Date(dto.data_fim);
     if (dto.observacao !== undefined) dados.observacao = dto.observacao;
     if (dto.tem_plp !== undefined) dados.tem_plp = dto.tem_plp;
+
+    if (dto.data_inicio !== undefined || dto.data_fim !== undefined) {
+      const jogoAtual = await this.buscarPorId(id);
+      const dataInicio = dados.data_inicio ?? jogoAtual.data_inicio;
+      const dataFim = dados.data_fim ?? jogoAtual.data_fim;
+      dados.semanas = calcularSemanas(dataInicio, dataFim);
+    }
 
     return this.prisma.jogo.update({
       where: { id_jogo: id },
