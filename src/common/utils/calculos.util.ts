@@ -26,10 +26,18 @@ export interface SemanaPrevidencia {
   lancamento: LancamentoSemana | null;
 }
 
+function adicionarDiasUTC(data: Date, dias: number): Date {
+  return new Date(Date.UTC(
+    data.getUTCFullYear(),
+    data.getUTCMonth(),
+    data.getUTCDate() + dias,
+  ));
+}
+
 function primeiraQuintaUTC(data: Date): Date {
   const dayUTC = data.getUTCDay(); // 0=Dom, 4=Qui
   const diasAteQuinta = (4 - dayUTC + 7) % 7;
-  return addDays(data, diasAteQuinta);
+  return adicionarDiasUTC(data, diasAteQuinta);
 }
 
 export function gerarSemanas(
@@ -77,7 +85,7 @@ export function gerarSemanas(
       permite_lancamento = false;
     }
 
-    const dataPrevistoLancamento = addWeeks(primeiraQuinta, i - 1);
+    const dataPrevistoLancamento = adicionarDiasUTC(primeiraQuinta, (i - 1) * 7);
 
     semanas.push({
       numero_semana: i,
