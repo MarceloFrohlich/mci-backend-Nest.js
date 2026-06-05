@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { differenceInWeeks } from 'date-fns';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
@@ -90,6 +91,14 @@ export class JogosService {
             where: { id_jogo: jogo.id_jogo },
             include: INCLUDE_JOGO,
           });
+        }).catch((e) => {
+          if (e instanceof PrismaClientKnownRequestError && e.code === 'P2003') {
+            const campo = String((e.meta as any)?.field_name ?? '');
+            if (campo.includes('id_copa')) throw new BadRequestException('Copa não encontrada');
+            if (campo.includes('id_lider')) throw new BadRequestException('Líder não encontrado');
+            throw new BadRequestException('Referência inválida: registro relacionado não encontrado');
+          }
+          throw e;
         }),
       ),
     );
