@@ -1,4 +1,4 @@
-import { addDays, addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+import { addDays, addWeeks, differenceInWeeks, getDay, getISOWeek, getISOWeekYear, isWithinInterval, parseISO, startOfDay } from 'date-fns';
 
 function semanaJaDisponivel(inicioSemana: Date, hoje: Date): boolean {
   const anoSemana = getISOWeekYear(inicioSemana);
@@ -19,6 +19,7 @@ export interface SemanaPrevidencia {
   numero_semana: number;
   data_inicio_semana: Date;
   data_fim_semana: Date;
+  data_previsto_lancamento: Date;
   inativa: boolean;
   status: 'concluida' | 'disponivel' | 'indisponivel' | 'inativa';
   permite_lancamento: boolean;
@@ -69,10 +70,14 @@ export function gerarSemanas(
       permite_lancamento = false;
     }
 
+    const diasAteQuinta = (4 - getDay(inicioSemana) + 7) % 7;
+    const dataPrevistoLancamento = addDays(inicioSemana, diasAteQuinta);
+
     semanas.push({
       numero_semana: i,
       data_inicio_semana: inicioSemana,
       data_fim_semana: fimSemana,
+      data_previsto_lancamento: dataPrevistoLancamento,
       inativa,
       status,
       permite_lancamento,
