@@ -204,6 +204,18 @@ export class PrevidenciasService {
       }
 
       if (previdencia.jogo.tem_plp && dto.entrevistaqtd != null) {
+        const somaRespostas = (dto.promotores ?? 0) + (dto.detratores ?? 0) + (dto.neutros ?? 0);
+        if (somaRespostas > dto.entrevistaqtd) {
+          throw new BadRequestException(
+            `A soma de promotores, detratores e neutros (${somaRespostas}) é maior que o total de entrevistados (${dto.entrevistaqtd})`,
+          );
+        }
+        if (somaRespostas < dto.entrevistaqtd) {
+          throw new BadRequestException(
+            `A soma de promotores, detratores e neutros (${somaRespostas}) é menor que o total de entrevistados (${dto.entrevistaqtd})`,
+          );
+        }
+
         const score = calcularPlp(dto.promotores ?? 0, dto.detratores ?? 0, dto.entrevistaqtd);
         const plpExistente = await tx.plp.findFirst({
           where: { id_atualizacao: idAtualizacao, deletado_em: null },
