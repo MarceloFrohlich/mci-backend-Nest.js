@@ -4,6 +4,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
+import { gerarSemanas } from '../common/utils/calculos.util';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto } from './dto/jogo.dto';
 
 function calcularSemanas(dataInicio: Date, dataFim: Date): number {
@@ -18,19 +19,39 @@ const INCLUDE_JOGO = {
   },
   lider: true,
   status: true,
-  previdencias: { where: { deletado_em: null } },
+  previdencias: {
+    where: { deletado_em: null },
+    include: {
+      atualizacoes: {
+        where: { deletado_em: null },
+        orderBy: { numero_semana: 'asc' as const },
+        include: { plps: { where: { deletado_em: null } } },
+      },
+    },
+  },
 };
+
+function enriquecerJogo(jogo: any) {
+  return {
+    ...jogo,
+    previdencias: (jogo.previdencias ?? []).map((p: any) => ({
+      ...p,
+      semanas: gerarSemanas(p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate, p.atualizacoes).filter((s) => !s.inativa),
+    })),
+  };
+}
 
 @Injectable()
 export class JogosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(solicitante: UsuarioAutenticado) {
-    return this.prisma.jogo.findMany({
+    const jogos = await this.prisma.jogo.findMany({
       where: filtroJogos(solicitante, solicitante.ano_ativo),
       include: INCLUDE_JOGO,
       orderBy: { nome: 'asc' },
     });
+    return jogos.map(enriquecerJogo);
   }
 
   async buscarPorId(id: string) {
@@ -39,7 +60,7 @@ export class JogosService {
       include: INCLUDE_JOGO,
     });
     if (!jogo) throw new NotFoundException('Jogo não encontrado');
-    return jogo;
+    return enriquecerJogo(jogo);
   }
 
   async criar(dto: CriarJogoDto) {
@@ -87,10 +108,11 @@ export class JogosService {
             );
           }
 
-          return tx.jogo.findFirst({
+          const criado = await tx.jogo.findFirst({
             where: { id_jogo: jogo.id_jogo },
             include: INCLUDE_JOGO,
           });
+          return enriquecerJogo(criado);
         }).catch((e) => {
           if (e instanceof PrismaClientKnownRequestError && e.code === 'P2003') {
             const campo = String((e.meta as any)?.field_name ?? '');
@@ -126,11 +148,12 @@ export class JogosService {
       dados.semanas = calcularSemanas(dataInicio, dataFim);
     }
 
-    return this.prisma.jogo.update({
+    const atualizado = await this.prisma.jogo.update({
       where: { id_jogo: id },
       data: dados,
       include: INCLUDE_JOGO,
     });
+    return enriquecerJogo(atualizado);
   }
 
   async remover(id: string) {
@@ -186,7 +209,8 @@ export class JogosService {
       where.copa = { id_departamento: dto.id_departamento, deletado_em: null };
     }
 
-    return this.prisma.jogo.findMany({ where, include: INCLUDE_JOGO, orderBy: { nome: 'asc' } });
+    const jogos = await this.prisma.jogo.findMany({ where, include: INCLUDE_JOGO, orderBy: { nome: 'asc' } });
+    return jogos.map(enriquecerJogo);
   }
 
   async listarParaSelect(solicitante: UsuarioAutenticado) {
@@ -198,15 +222,16 @@ export class JogosService {
   }
 
   async porCopa(idCopa: string) {
-    return this.prisma.jogo.findMany({
+    const jogos = await this.prisma.jogo.findMany({
       where: { id_copa: idCopa, deletado_em: null },
       include: INCLUDE_JOGO,
       orderBy: { nome: 'asc' },
     });
+    return jogos.map(enriquecerJogo);
   }
 
   async porDepartamento(idDepartamento: string, solicitante: UsuarioAutenticado) {
-    return this.prisma.jogo.findMany({
+    const jogos = await this.prisma.jogo.findMany({
       where: {
         ...filtroJogos(solicitante, solicitante.ano_ativo),
         copa: { id_departamento: idDepartamento, deletado_em: null },
@@ -214,6 +239,7 @@ export class JogosService {
       include: INCLUDE_JOGO,
       orderBy: { nome: 'asc' },
     });
+    return jogos.map(enriquecerJogo);
   }
 
   async duplicar(id: string) {
