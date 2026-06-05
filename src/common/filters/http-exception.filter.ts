@@ -92,10 +92,19 @@ export class FiltroHttpException implements ExceptionFilter {
         ? excecao.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const corpo =
-      excecao instanceof HttpException
-        ? excecao.getResponse()
-        : 'Erro interno do servidor';
+    if (!(excecao instanceof HttpException)) {
+      console.error('[FiltroHttpException] Erro não tratado:', excecao);
+      resposta.status(status).json({
+        sucesso: false,
+        statusCode: status,
+        timestamp: new Date().toISOString(),
+        path: requisicao.url,
+        mensagem: 'Erro interno do servidor',
+      });
+      return;
+    }
+
+    const corpo = excecao.getResponse();
 
     const mensagemBruta =
       typeof corpo === 'object' && 'message' in (corpo as object)
