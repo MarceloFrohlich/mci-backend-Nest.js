@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, startOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { calcularMetaSemanal, calcularPlp, calcularProgressoPrevidencia, gerarSemanas } from '../common/utils/calculos.util';
+import { calcularMetaSemanal, calcularPlp, calcularProgressoPrevidencia, gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
 import {
   CriarPrevidenciaDto,
   AtualizarPrevidenciaDto,
@@ -41,7 +41,7 @@ export class PrevidenciasService {
 
     return previdencias.map((p) => ({
       ...p,
-      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim),
+      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
       progresso: calcularProgressoPrevidencia(
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
@@ -62,7 +62,7 @@ export class PrevidenciasService {
 
     return previdencias.map((p) => ({
       ...p,
-      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim),
+      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
       progresso: calcularProgressoPrevidencia(
         p.placar_inicial, p.placar_atual, p.placar_desejado,
         p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
@@ -83,6 +83,7 @@ export class PrevidenciasService {
       meta_semanal: calcularMetaSemanal(
         previdencia.placar_inicial, previdencia.placar_desejado,
         previdencia.data_inicio, previdencia.data_fim,
+        previdencia.inativo_de, previdencia.inativo_ate,
       ),
       semanas: gerarSemanas(
         previdencia.data_inicio, previdencia.data_fim,
@@ -93,15 +94,24 @@ export class PrevidenciasService {
   }
 
   async criar(dto: CriarPrevidenciaDto) {
+    const dataInicio = new Date(dto.data_inicio);
+    const dataFim = new Date(dto.data_fim);
+    const inativoDe = dto.inativo_de ? new Date(dto.inativo_de) : null;
+    const inativoAte = dto.inativo_ate ? new Date(dto.inativo_ate) : null;
+    const sugestao = sugerirMetaInteira(0, dto.placar_desejado, dataInicio, dataFim, inativoDe, inativoAte);
+    if (sugestao) {
+      throw new BadRequestException(mensagemMetaNaoInteira(dto.placar_desejado, sugestao));
+    }
+
     const previdencia = await this.prisma.previdencia.create({
       data: {
         id_jogo: dto.id_jogo,
         unidade_medida: dto.unidade_medida ?? null,
         placar_desejado: dto.placar_desejado,
-        data_inicio: new Date(dto.data_inicio),
-        data_fim: new Date(dto.data_fim),
-        inativo_de: dto.inativo_de ? new Date(dto.inativo_de) : null,
-        inativo_ate: dto.inativo_ate ? new Date(dto.inativo_ate) : null,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        inativo_de: inativoDe,
+        inativo_ate: inativoAte,
         verbo: dto.verbo ?? null,
         excluir_periodo: dto.excluir_periodo ?? false,
       },
@@ -113,12 +123,34 @@ export class PrevidenciasService {
       meta_semanal: calcularMetaSemanal(
         previdencia.placar_inicial, previdencia.placar_desejado,
         previdencia.data_inicio, previdencia.data_fim,
+        previdencia.inativo_de, previdencia.inativo_ate,
       ),
     };
   }
 
   async atualizar(id: string, dto: AtualizarPrevidenciaDto) {
-    await this.buscarPorId(id);
+    const existente = await this.buscarPorId(id);
+
+    const mudaMeta =
+      dto.placar_desejado !== undefined ||
+      dto.data_inicio !== undefined ||
+      dto.data_fim !== undefined ||
+      dto.inativo_de !== undefined ||
+      dto.inativo_ate !== undefined;
+
+    if (mudaMeta) {
+      const placarDesejado = dto.placar_desejado ?? existente.placar_desejado;
+      const dataInicio = dto.data_inicio ? new Date(dto.data_inicio) : existente.data_inicio;
+      const dataFim = dto.data_fim ? new Date(dto.data_fim) : existente.data_fim;
+      const inativoDe =
+        dto.inativo_de !== undefined ? (dto.inativo_de ? new Date(dto.inativo_de) : null) : existente.inativo_de;
+      const inativoAte =
+        dto.inativo_ate !== undefined ? (dto.inativo_ate ? new Date(dto.inativo_ate) : null) : existente.inativo_ate;
+      const sugestao = sugerirMetaInteira(existente.placar_inicial, placarDesejado, dataInicio, dataFim, inativoDe, inativoAte);
+      if (sugestao) {
+        throw new BadRequestException(mensagemMetaNaoInteira(placarDesejado, sugestao));
+      }
+    }
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.unidade_medida !== undefined) dados.unidade_medida = dto.unidade_medida;
@@ -141,6 +173,7 @@ export class PrevidenciasService {
       meta_semanal: calcularMetaSemanal(
         atualizada.placar_inicial, atualizada.placar_desejado,
         atualizada.data_inicio, atualizada.data_fim,
+        atualizada.inativo_de, atualizada.inativo_ate,
       ),
     };
   }

@@ -4,7 +4,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
-import { gerarSemanas } from '../common/utils/calculos.util';
+import { gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto } from './dto/jogo.dto';
 
 function calcularSemanas(dataInicio: Date, dataFim: Date): number {
@@ -65,6 +65,20 @@ export class JogosService {
 
   async criar(dto: CriarJogoDto) {
     const copas = dto.ids_copas.filter((id) => id != null && id.length > 0);
+
+    for (const prev of dto.previdencias ?? []) {
+      const sugestao = sugerirMetaInteira(
+        0,
+        prev.placar_desejado,
+        new Date(prev.data_inicio),
+        new Date(prev.data_fim),
+        prev.inativo_de ? new Date(prev.inativo_de) : null,
+        prev.inativo_ate ? new Date(prev.inativo_ate) : null,
+      );
+      if (sugestao) {
+        throw new BadRequestException(mensagemMetaNaoInteira(prev.placar_desejado, sugestao));
+      }
+    }
 
     return Promise.all(
       copas.map((idCopa) =>

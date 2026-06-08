@@ -45,7 +45,7 @@ export class RelatoriosService {
     const jogosComCalculos = copa.jogos.map((jogo) => {
       const previdenciasComCalculos = jogo.previdencias.map((p) => ({
         ...p,
-        meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim),
+        meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
         progresso: calcularProgressoPrevidencia(
           p.placar_inicial, p.placar_atual, p.placar_desejado,
           p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,

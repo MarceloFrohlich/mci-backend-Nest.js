@@ -504,7 +504,18 @@ O parâmetro `:id` é o `id_copa`.
 
 ### Meta semanal (calculada automaticamente)
 ```
-meta_semanal = ceil((placar_desejado − placar_inicial) / semanas_entre_datas)
+semanas_totais  = differenceInWeeks(data_fim, data_inicio) + 1   // 1ª semana já conta (Modelo A)
+semanas_ativas  = semanas_totais − semanas_dentro_do_periodo_inativo
+meta_semanal    = ceil((placar_desejado − placar_inicial) / semanas_ativas)
+```
+- O `+ 1` existe porque `data_inicio` e `data_fim` são **inclusivas**: um jogo de 02/01 a 30/01 tem 5 quintas de lançamento (não 4 intervalos). A primeira quinta já espera resultado lançado.
+- O divisor usa apenas o **saldo de semanas ativas** — as semanas que caem no período de inatividade (`inativo_de`..`inativo_ate`) são descontadas, exatamente as mesmas que `gerarSemanas` esconde do front.
+
+### Validação de meta inteira (criação/atualização)
+Ao criar uma previdência (avulsa, via update ou na criação do jogo), a meta (`placar_desejado`) é validada contra o saldo de semanas ativas. Se a divisão **não** der um valor inteiro por semana, a API responde **400** sugerindo a meta inteira imediatamente abaixo e acima:
+```
+A meta 100 dividida em 23 semanas resulta em 4.35 por semana, que não é um
+valor inteiro. Use 92 (4/semana) ou 115 (5/semana) para uma meta semanal inteira.
 ```
 
 ### NPS / PLP
@@ -515,11 +526,12 @@ plp_media = média de todos os PLPs da previdência (recalculada a cada inserç�
 
 ### Progresso com períodos de inatividade
 ```
-semanas_efetivas = semanas_totais − semanas_de_inatividade
+semanas_efetivas = semanas_ativas                                   // = meta_semanal usa a mesma base
 valor_por_semana = (placar_desejado − placar_inicial) / semanas_efetivas
-valor_previsto = valor_por_semana × semanas_decorridas_ajustadas
-percentual = (placar_atual − placar_inicial) / valor_previsto × 100
+valor_previsto   = valor_por_semana × semanas_ativas_decorridas     // só semanas ativas já passadas
+percentual       = (placar_atual − placar_inicial) / valor_previsto × 100
 ```
+`valor_por_semana` é idêntico ao `meta_semanal` (mesma base de semanas ativas). Antes do jogo começar, `semanas_ativas_decorridas = 0`.
 
 ### Multi-ano
 O campo `ano_ativo` no token JWT determina quais copas e jogos são exibidos. Copas e jogos são filtrados automaticamente pelo ano de suas datas de início. O ano pode ser alterado via `PATCH /auth/ano`.
