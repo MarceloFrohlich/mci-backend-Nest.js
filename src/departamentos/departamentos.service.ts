@@ -24,9 +24,9 @@ export class DepartamentosService {
     });
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const departamento = await this.prisma.departamento.findFirst({
-      where: { id_departamento: id, deletado_em: null },
+      where: { AND: [{ id_departamento: id, deletado_em: null }, filtroDepartamentos(solicitante)] },
       include: INCLUDE_DEPARTAMENTO,
     });
     if (!departamento) throw new NotFoundException('Departamento não encontrado');
@@ -40,8 +40,8 @@ export class DepartamentosService {
     });
   }
 
-  async atualizar(id: string, dto: AtualizarDepartamentoDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarDepartamentoDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
     return this.prisma.departamento.update({
       where: { id_departamento: id },
       data: { ...dto, data_atualizacao: new Date() },
@@ -49,8 +49,8 @@ export class DepartamentosService {
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     const copasAtivas = await this.prisma.copa.findMany({
       where: { id_departamento: id, deletado_em: null },

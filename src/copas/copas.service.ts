@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroCopas } from '../common/utils/permissoes.util';
+import { filtroCopas, escopoCopaPorId } from '../common/utils/permissoes.util';
 import { CriarCopaDto, AtualizarCopaDto, FiltrarCopaDto } from './dto/copa.dto';
 
 const INCLUDE_COPA = {
@@ -21,9 +21,9 @@ export class CopasService {
     });
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const copa = await this.prisma.copa.findFirst({
-      where: { id_copa: id, deletado_em: null },
+      where: { AND: [{ id_copa: id, deletado_em: null }, escopoCopaPorId(solicitante)] },
       include: INCLUDE_COPA,
     });
     if (!copa) throw new NotFoundException('Copa não encontrada');
@@ -56,8 +56,8 @@ export class CopasService {
     return copas;
   }
 
-  async atualizar(id: string, dto: AtualizarCopaDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarCopaDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.nome) dados.nome = dto.nome;
@@ -77,8 +77,8 @@ export class CopasService {
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     await this.prisma.$transaction(async (tx) => {
       const jogos = await tx.jogo.findMany({

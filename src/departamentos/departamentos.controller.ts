@@ -33,8 +33,8 @@ export class DepartamentosController {
 
   @ApiOperation({ summary: 'Busca departamento por ID' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.departamentosService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.departamentosService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria novo departamento vinculado a uma filial' })
@@ -45,14 +45,14 @@ export class DepartamentosController {
 
   @ApiOperation({ summary: 'Atualiza departamento' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarDepartamentoDto) {
-    return this.departamentosService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarDepartamentoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.departamentosService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove departamento (soft delete)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.departamentosService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.departamentosService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra departamentos por nome, filial, franqueadora ou com/sem copa' })

@@ -124,6 +124,36 @@ export function filtroJogos(usuario: UsuarioAutenticado, anoAtivo: number) {
   };
 }
 
+// --- Escopo de tenant por ID (somente hierarquia, sem janela de ano) ---
+// Usado para validar acesso a UM registro específico em operações por ID
+// (buscar/atualizar/remover), sem o recorte de ano aplicado nas listagens.
+
+export function escopoCopaPorId(usuario: UsuarioAutenticado) {
+  if (isAdminGlobal(usuario)) return { deletado_em: null };
+
+  if (usuario.id_nivel === NIVEL_FRANQUEADORA) {
+    return {
+      deletado_em: null,
+      departamento: {
+        filial: { id_franqueadora: usuario.relacao, deletado_em: null },
+        deletado_em: null,
+      },
+    };
+  }
+  if (usuario.id_nivel === NIVEL_FILIAL) {
+    return {
+      deletado_em: null,
+      departamento: { id_filial: usuario.relacao, deletado_em: null },
+    };
+  }
+  return { deletado_em: null, id_departamento: usuario.relacao };
+}
+
+export function escopoJogoPorId(usuario: UsuarioAutenticado) {
+  if (isAdminGlobal(usuario)) return { deletado_em: null };
+  return { deletado_em: null, copa: escopoCopaPorId(usuario) };
+}
+
 export function filtroLideres(usuario: UsuarioAutenticado) {
   if (isAdminGlobal(usuario)) return { deletado_em: null };
   return { id_franqueadora: usuario.relacao, deletado_em: null };

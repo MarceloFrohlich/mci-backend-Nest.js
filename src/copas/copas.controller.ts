@@ -33,8 +33,8 @@ export class CopasController {
 
   @ApiOperation({ summary: 'Busca copa por ID com dados hierárquicos completos' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.copasService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.copasService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria copa — aceita múltiplos departamentos (cria uma copa por departamento)' })
@@ -45,14 +45,14 @@ export class CopasController {
 
   @ApiOperation({ summary: 'Atualiza dados da copa' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarCopaDto) {
-    return this.copasService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarCopaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.copasService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove copa em cascata (jogos, previdências, atualizações, PLPs, observações)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.copasService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.copasService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra copas por nome, departamento, filial, franqueadora ou período' })

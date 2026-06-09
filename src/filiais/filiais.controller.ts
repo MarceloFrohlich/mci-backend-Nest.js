@@ -27,8 +27,8 @@ export class FiliaisController {
 
   @ApiOperation({ summary: 'Busca filial por ID' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.filiaisService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.filiaisService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria nova filial vinculada a uma franqueadora' })
@@ -39,14 +39,14 @@ export class FiliaisController {
 
   @ApiOperation({ summary: 'Atualiza filial' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarFilialDto) {
-    return this.filiaisService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarFilialDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.filiaisService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove filial em cascata (departamentos)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.filiaisService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.filiaisService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra filiais por nome ou franqueadora' })

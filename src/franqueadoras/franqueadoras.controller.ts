@@ -21,8 +21,8 @@ export class FranqueadorasController {
 
   @ApiOperation({ summary: 'Busca franqueadora por ID' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.franqueadorasService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.franqueadorasService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria nova franqueadora' })
@@ -33,14 +33,14 @@ export class FranqueadorasController {
 
   @ApiOperation({ summary: 'Atualiza franqueadora' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarFranqueadoraDto) {
-    return this.franqueadorasService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarFranqueadoraDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.franqueadorasService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove franqueadora em cascata (filiais e departamentos)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.franqueadorasService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.franqueadorasService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra franqueadoras por nome' })

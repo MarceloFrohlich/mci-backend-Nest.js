@@ -21,8 +21,8 @@ export class LideresController {
 
   @ApiOperation({ summary: 'Busca líder por ID' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.lideresService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.lideresService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria líder (vinculado automaticamente à franqueadora do usuário)' })
@@ -33,14 +33,14 @@ export class LideresController {
 
   @ApiOperation({ summary: 'Atualiza nome do líder' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarLiderDto) {
-    return this.lideresService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarLiderDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.lideresService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove líder (soft delete)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.lideresService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.lideresService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra líderes por nome' })

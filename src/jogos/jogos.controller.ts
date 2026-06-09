@@ -47,8 +47,8 @@ export class JogosController {
 
   @ApiOperation({ summary: 'Busca jogo por ID com previdências e status' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.jogosService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria jogo em uma ou mais copas (retorna array)' })
@@ -59,20 +59,20 @@ export class JogosController {
 
   @ApiOperation({ summary: 'Atualiza dados do jogo' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarJogoDto) {
-    return this.jogosService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove jogo em cascata (previdências, atualizações, PLPs, observações)' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.jogosService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Replica um jogo (com suas previdências, zeradas) para uma ou mais copas de destino' })
   @Post(':id/replicar')
-  replicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReplicarJogoDto) {
-    return this.jogosService.replicar(id, dto);
+  replicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReplicarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.replicar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza ou cria status do jogo (cria se não existir)' })

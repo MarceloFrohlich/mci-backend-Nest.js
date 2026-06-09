@@ -18,9 +18,9 @@ export class FiliaisService {
     });
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const filial = await this.prisma.filial.findFirst({
-      where: { id_filial: id, deletado_em: null },
+      where: { AND: [{ id_filial: id, deletado_em: null }, filtroFiliais(solicitante)] },
       include: INCLUDE_FILIAL,
     });
     if (!filial) throw new NotFoundException('Filial não encontrada');
@@ -34,8 +34,8 @@ export class FiliaisService {
     });
   }
 
-  async atualizar(id: string, dto: AtualizarFilialDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarFilialDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
     return this.prisma.filial.update({
       where: { id_filial: id },
       data: { ...dto, data_atualizacao: new Date() },
@@ -43,8 +43,8 @@ export class FiliaisService {
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     const departamentosAtivos = await this.prisma.departamento.findMany({
       where: { id_filial: id, deletado_em: null },

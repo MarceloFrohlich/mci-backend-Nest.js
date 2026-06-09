@@ -19,9 +19,9 @@ export class FranqueadorasService {
     });
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const franqueadora = await this.prisma.franqueadora.findFirst({
-      where: { id_franqueadora: id, deletado_em: null },
+      where: { AND: [{ id_franqueadora: id, deletado_em: null }, filtroFranqueadoras(solicitante)] },
     });
     if (!franqueadora) throw new NotFoundException('Franqueadora não encontrada');
     return franqueadora;
@@ -31,16 +31,16 @@ export class FranqueadorasService {
     return this.prisma.franqueadora.create({ data: { nome: dto.nome } });
   }
 
-  async atualizar(id: string, dto: AtualizarFranqueadoraDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarFranqueadoraDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
     return this.prisma.franqueadora.update({
       where: { id_franqueadora: id },
       data: { ...dto, data_atualizacao: new Date() },
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     const filiaisAtivas = await this.prisma.filial.findMany({
       where: { id_franqueadora: id, deletado_em: null },

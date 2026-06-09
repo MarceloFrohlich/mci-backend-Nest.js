@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { differenceInWeeks } from 'date-fns';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroJogos } from '../common/utils/permissoes.util';
+import { filtroJogos, escopoJogoPorId, escopoCopaPorId } from '../common/utils/permissoes.util';
 import { gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 
@@ -54,9 +54,9 @@ export class JogosService {
     return jogos.map(enriquecerJogo);
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const jogo = await this.prisma.jogo.findFirst({
-      where: { id_jogo: id, deletado_em: null },
+      where: { AND: [{ id_jogo: id, deletado_em: null }, escopoJogoPorId(solicitante)] },
       include: INCLUDE_JOGO,
     });
     if (!jogo) throw new NotFoundException('Jogo não encontrado');
@@ -140,8 +140,8 @@ export class JogosService {
     );
   }
 
-  async atualizar(id: string, dto: AtualizarJogoDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarJogoDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.nome !== undefined) dados.nome = dto.nome;
@@ -156,7 +156,7 @@ export class JogosService {
     if (dto.tem_plp !== undefined) dados.tem_plp = dto.tem_plp;
 
     if (dto.data_inicio !== undefined || dto.data_fim !== undefined) {
-      const jogoAtual = await this.buscarPorId(id);
+      const jogoAtual = await this.buscarPorId(id, solicitante);
       const dataInicio = dados.data_inicio ?? jogoAtual.data_inicio;
       const dataFim = dados.data_fim ?? jogoAtual.data_fim;
       dados.semanas = calcularSemanas(dataInicio, dataFim);
@@ -170,8 +170,8 @@ export class JogosService {
     return enriquecerJogo(atualizado);
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     await this.prisma.$transaction(async (tx) => {
       const previds = await tx.previdencia.findMany({
@@ -256,12 +256,23 @@ export class JogosService {
     return jogos.map(enriquecerJogo);
   }
 
-  async replicar(id: string, dto: ReplicarJogoDto) {
-    const original = await this.buscarPorId(id);
+  async replicar(id: string, dto: ReplicarJogoDto, solicitante: UsuarioAutenticado) {
+    const original = await this.buscarPorId(id, solicitante);
 
     const copasDestino = dto.ids_copas_destino.filter((c) => c != null && c.length > 0);
     if (copasDestino.length === 0) {
       throw new BadRequestException('Informe ao menos uma copa de destino');
+    }
+
+    // Garante que todas as copas de destino existem e estão dentro do acesso do usuário
+    const copasPermitidas = await this.prisma.copa.findMany({
+      where: { AND: [{ id_copa: { in: copasDestino }, deletado_em: null }, escopoCopaPorId(solicitante)] },
+      select: { id_copa: true },
+    });
+    const idsPermitidos = new Set(copasPermitidas.map((c) => c.id_copa));
+    const foraDeEscopo = copasDestino.filter((c) => !idsPermitidos.has(c));
+    if (foraDeEscopo.length > 0) {
+      throw new ForbiddenException('Uma ou mais copas de destino não existem ou estão fora do seu acesso');
     }
 
     return Promise.all(

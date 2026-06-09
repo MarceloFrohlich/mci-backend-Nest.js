@@ -18,9 +18,9 @@ export class LideresService {
     });
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const lider = await this.prisma.lider.findFirst({
-      where: { id_lider: id, deletado_em: null },
+      where: { AND: [{ id_lider: id, deletado_em: null }, filtroLideres(solicitante)] },
       include: INCLUDE_LIDER,
     });
     if (!lider) throw new NotFoundException('Líder não encontrado');
@@ -41,8 +41,8 @@ export class LideresService {
     });
   }
 
-  async atualizar(id: string, dto: AtualizarLiderDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarLiderDto, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
     return this.prisma.lider.update({
       where: { id_lider: id },
       data: { ...dto, data_atualizacao: new Date() },
@@ -50,8 +50,8 @@ export class LideresService {
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
     await this.prisma.lider.update({
       where: { id_lider: id },
       data: { deletado_em: new Date() },
