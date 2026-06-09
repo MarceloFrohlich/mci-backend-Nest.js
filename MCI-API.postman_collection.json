@@ -733,7 +733,7 @@
           }
         },
         {
-          "name": "Duplicar Jogo",
+          "name": "Replicar Jogo",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -742,9 +742,9 @@
               "raw": "{\n  \"ids_copas_destino\": [\"UUID-COPA-DESTINO-1\", \"UUID-COPA-DESTINO-2\"]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/jogos/:id/duplicar",
+              "raw": "{{base_url}}/jogos/:id/replicar",
               "host": ["{{base_url}}"],
-              "path": ["jogos", ":id", "duplicar"],
+              "path": ["jogos", ":id", "replicar"],
               "variable": [{ "key": "id", "value": "UUID-JOGO-ORIGEM" }]
             }
           }

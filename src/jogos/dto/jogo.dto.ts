@@ -249,7 +249,7 @@ export class AtualizarJogoDto {
   tem_plp?: boolean;
 }
 
-export class DuplicarJogoDto {
+export class ReplicarJogoDto {
   @ApiProperty({
     description: '[Obrigatório] Lista de UUIDs das copas de destino para onde o jogo (e suas previdências) será replicado',
     example: ['a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'b2c3d4e5-f6a7-8901-bcde-f12345678901'],

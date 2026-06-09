@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
 import { gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
-import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, DuplicarJogoDto } from './dto/jogo.dto';
+import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 
 function calcularSemanas(dataInicio: Date, dataFim: Date): number {
   return differenceInWeeks(dataFim, dataInicio) + 1;
@@ -256,7 +256,7 @@ export class JogosService {
     return jogos.map(enriquecerJogo);
   }
 
-  async duplicar(id: string, dto: DuplicarJogoDto) {
+  async replicar(id: string, dto: ReplicarJogoDto) {
     const original = await this.buscarPorId(id);
 
     const copasDestino = dto.ids_copas_destino.filter((c) => c != null && c.length > 0);

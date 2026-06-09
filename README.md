@@ -371,7 +371,7 @@ Authorization: Bearer <token>
 | POST | `/jogos` | Cria jogo |
 | PUT | `/jogos/:id` | Atualiza |
 | POST | `/jogos/:id/remover` | Remove em cascata |
-| POST | `/jogos/:id/duplicar` | Duplica jogo (sem previdências) |
+| POST | `/jogos/:id/replicar` | Replica jogo (com previdências, zeradas) para copas de destino |
 | PATCH | `/jogos/:id/status` | Cria ou atualiza status `{ "status": "...", "valor": "..." }` |
 | POST | `/jogos/filtrar` | Filtra por nome, copa, departamento ou líder |
 

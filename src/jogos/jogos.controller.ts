@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Patch, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
 import { JogosService } from './jogos.service';
-import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, DuplicarJogoDto } from './dto/jogo.dto';
+import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
@@ -70,9 +70,9 @@ export class JogosController {
   }
 
   @ApiOperation({ summary: 'Replica um jogo (com suas previdências, zeradas) para uma ou mais copas de destino' })
-  @Post(':id/duplicar')
-  duplicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: DuplicarJogoDto) {
-    return this.jogosService.duplicar(id, dto);
+  @Post(':id/replicar')
+  replicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReplicarJogoDto) {
+    return this.jogosService.replicar(id, dto);
   }
 
   @ApiOperation({ summary: 'Atualiza ou cria status do jogo (cria se não existir)' })
