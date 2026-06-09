@@ -3,6 +3,7 @@ import { addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, startOfDay } f
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { calcularMetaSemanal, calcularPlp, calcularProgressoPrevidencia, gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
+import { escopoJogoPorId } from '../common/utils/permissoes.util';
 import {
   CriarPrevidenciaDto,
   AtualizarPrevidenciaDto,
@@ -32,9 +33,9 @@ const INCLUDE_PREVIDENCIA = {
 export class PrevidenciasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listarPorJogo(idJogo: string) {
+  async listarPorJogo(idJogo: string, solicitante: UsuarioAutenticado) {
     const previdencias = await this.prisma.previdencia.findMany({
-      where: { id_jogo: idJogo, deletado_em: null },
+      where: { id_jogo: idJogo, deletado_em: null, jogo: escopoJogoPorId(solicitante) },
       include: INCLUDE_PREVIDENCIA,
       orderBy: { data_criacao: 'asc' },
     });
@@ -50,11 +51,15 @@ export class PrevidenciasService {
     }));
   }
 
-  async listarPorDepartamento(idDepartamento: string, _solicitante: UsuarioAutenticado) {
+  async listarPorDepartamento(idDepartamento: string, solicitante: UsuarioAutenticado) {
     const previdencias = await this.prisma.previdencia.findMany({
       where: {
         deletado_em: null,
-        jogo: { deletado_em: null, copa: { id_departamento: idDepartamento, deletado_em: null } },
+        jogo: {
+          deletado_em: null,
+          copa: { id_departamento: idDepartamento, deletado_em: null },
+          AND: [escopoJogoPorId(solicitante)],
+        },
       },
       include: INCLUDE_PREVIDENCIA,
       orderBy: { data_criacao: 'asc' },
@@ -71,9 +76,9 @@ export class PrevidenciasService {
     }));
   }
 
-  async buscarPorId(id: string) {
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const previdencia = await this.prisma.previdencia.findFirst({
-      where: { id_previdencia: id, deletado_em: null },
+      where: { AND: [{ id_previdencia: id, deletado_em: null }, { jogo: escopoJogoPorId(solicitante) }] },
       include: INCLUDE_PREVIDENCIA,
     });
     if (!previdencia) throw new NotFoundException('Previdência não encontrada');
@@ -93,7 +98,13 @@ export class PrevidenciasService {
     };
   }
 
-  async criar(dto: CriarPrevidenciaDto) {
+  async criar(dto: CriarPrevidenciaDto, solicitante: UsuarioAutenticado) {
+    const jogo = await this.prisma.jogo.findFirst({
+      where: { AND: [{ id_jogo: dto.id_jogo, deletado_em: null }, escopoJogoPorId(solicitante)] },
+      select: { id_jogo: true },
+    });
+    if (!jogo) throw new NotFoundException('Jogo não encontrado');
+
     const dataInicio = new Date(dto.data_inicio);
     const dataFim = new Date(dto.data_fim);
     const inativoDe = dto.inativo_de ? new Date(dto.inativo_de) : null;
@@ -128,8 +139,8 @@ export class PrevidenciasService {
     };
   }
 
-  async atualizar(id: string, dto: AtualizarPrevidenciaDto) {
-    const existente = await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarPrevidenciaDto, solicitante: UsuarioAutenticado) {
+    const existente = await this.buscarPorId(id, solicitante);
 
     const mudaMeta =
       dto.placar_desejado !== undefined ||
@@ -180,7 +191,7 @@ export class PrevidenciasService {
 
   async lancarSemana(idPrevidencia: string, numeroSemana: number, dto: LancarSemanaDto, solicitante: UsuarioAutenticado) {
     const previdencia = await this.prisma.previdencia.findFirst({
-      where: { id_previdencia: idPrevidencia, deletado_em: null },
+      where: { AND: [{ id_previdencia: idPrevidencia, deletado_em: null }, { jogo: escopoJogoPorId(solicitante) }] },
       include: { jogo: true },
     });
     if (!previdencia) throw new NotFoundException('Previdência não encontrada');
@@ -294,11 +305,11 @@ export class PrevidenciasService {
       }
     });
 
-    return this.buscarPorId(idPrevidencia);
+    return this.buscarPorId(idPrevidencia, solicitante);
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    await this.buscarPorId(id, solicitante);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.atualizacaoPrevidencia.updateMany({ where: { id_previdencia: id }, data: { deletado_em: new Date() } });
@@ -310,8 +321,8 @@ export class PrevidenciasService {
     return { mensagem: 'Previdência removida com sucesso' };
   }
 
-  async duplicar(id: string) {
-    const original = await this.buscarPorId(id);
+  async duplicar(id: string, solicitante: UsuarioAutenticado) {
+    const original = await this.buscarPorId(id, solicitante);
 
     return this.prisma.previdencia.create({
       data: {
@@ -331,7 +342,7 @@ export class PrevidenciasService {
   }
 
   async atualizarPlacar(id: string, dto: AtualizarPlacarDto, solicitante: UsuarioAutenticado) {
-    await this.buscarPorId(id);
+    await this.buscarPorId(id, solicitante);
 
     const [atualizacao] = await this.prisma.$transaction([
       this.prisma.atualizacaoPrevidencia.create({
@@ -346,14 +357,24 @@ export class PrevidenciasService {
     return atualizacao;
   }
 
-  async listarAtualizacoes(idPrevidencia: string) {
+  async listarAtualizacoes(idPrevidencia: string, solicitante: UsuarioAutenticado) {
     return this.prisma.atualizacaoPrevidencia.findMany({
-      where: { id_previdencia: idPrevidencia, deletado_em: null },
+      where: {
+        id_previdencia: idPrevidencia,
+        deletado_em: null,
+        previdencia: { jogo: escopoJogoPorId(solicitante) },
+      },
       orderBy: { data_criacao: 'desc' },
     });
   }
 
-  async removerAtualizacao(id: string) {
+  async removerAtualizacao(id: string, solicitante: UsuarioAutenticado) {
+    const atualizacao = await this.prisma.atualizacaoPrevidencia.findFirst({
+      where: { AND: [{ id_atualizacao: id, deletado_em: null }, { previdencia: { jogo: escopoJogoPorId(solicitante) } }] },
+      select: { id_atualizacao: true },
+    });
+    if (!atualizacao) throw new NotFoundException('Atualização não encontrada');
+
     await this.prisma.atualizacaoPrevidencia.update({
       where: { id_atualizacao: id },
       data: { deletado_em: new Date() },

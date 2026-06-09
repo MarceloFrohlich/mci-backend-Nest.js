@@ -3,6 +3,8 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PlpsService } from './plps.service';
 import { CriarPlpDto } from './dto/plp.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
+import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 
 @ApiTags('PLPs')
 @ApiBearerAuth('JWT')
@@ -13,19 +15,19 @@ export class PlpsController {
 
   @ApiOperation({ summary: 'Lista PLPs de uma previdência' })
   @Get('por-previdencia/:id')
-  listarPorPrevidencia(@Param('id', ParseUUIDPipe) id: string) {
-    return this.plpsService.listarPorPrevidencia(id);
+  listarPorPrevidencia(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.plpsService.listarPorPrevidencia(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria PLP — calcula NPS e recalcula automaticamente a média da previdência' })
   @Post()
-  criar(@Body() dto: CriarPlpDto) {
-    return this.plpsService.criar(dto);
+  criar(@Body() dto: CriarPlpDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.plpsService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove PLP e recalcula média da previdência' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.plpsService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.plpsService.remover(id, usuario);
   }
 }

@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { calcularMetaSemanal, calcularProgressoPrevidencia } from '../common/utils/calculos.util';
+import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
+import { escopoCopaPorId, escopoJogoPorId } from '../common/utils/permissoes.util';
 
 @Injectable()
 export class RelatoriosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async gerarRelatorio(idCopa: string) {
+  async gerarRelatorio(idCopa: string, solicitante: UsuarioAutenticado) {
     const copa = await this.prisma.copa.findFirst({
-      where: { id_copa: idCopa, deletado_em: null },
+      where: { AND: [{ id_copa: idCopa, deletado_em: null }, escopoCopaPorId(solicitante)] },
       include: {
         departamento: { include: { filial: { include: { franqueadora: true } } } },
         jogos: {
@@ -58,7 +60,13 @@ export class RelatoriosService {
     return { ...copa, jogos: jogosComCalculos };
   }
 
-  async criarStatus(idJogo: string, status: string, valor: string) {
+  async criarStatus(idJogo: string, status: string, valor: string, solicitante: UsuarioAutenticado) {
+    const jogo = await this.prisma.jogo.findFirst({
+      where: { AND: [{ id_jogo: idJogo, deletado_em: null }, escopoJogoPorId(solicitante)] },
+      select: { id_jogo: true },
+    });
+    if (!jogo) throw new NotFoundException('Jogo não encontrado');
+
     const existente = await this.prisma.jogoStatus.findFirst({
       where: { id_jogo: idJogo, deletado_em: null },
     });
@@ -73,9 +81,9 @@ export class RelatoriosService {
     return this.prisma.jogoStatus.create({ data: { id_jogo: idJogo, status, valor } });
   }
 
-  async atualizarStatus(id: string, status: string, valor: string) {
+  async atualizarStatus(id: string, status: string, valor: string, solicitante: UsuarioAutenticado) {
     const existente = await this.prisma.jogoStatus.findFirst({
-      where: { id_status: id, deletado_em: null },
+      where: { AND: [{ id_status: id, deletado_em: null }, { jogo: escopoJogoPorId(solicitante) }] },
     });
     if (!existente) throw new NotFoundException('Status não encontrado');
 

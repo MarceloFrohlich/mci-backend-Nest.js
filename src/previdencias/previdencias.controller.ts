@@ -15,8 +15,8 @@ export class PrevidenciasController {
 
   @ApiOperation({ summary: 'Lista previdências de um jogo com meta semanal e progresso calculados' })
   @Get('por-jogo/:id')
-  listarPorJogo(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.listarPorJogo(id);
+  listarPorJogo(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.listarPorJogo(id, usuario);
   }
 
   @ApiOperation({ summary: 'Lista previdências de um departamento com cálculos de progresso' })
@@ -27,38 +27,38 @@ export class PrevidenciasController {
 
   @ApiOperation({ summary: 'Lista histórico de atualizações de placar de uma previdência' })
   @Get(':id/atualizacoes')
-  listarAtualizacoes(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.listarAtualizacoes(id);
+  listarAtualizacoes(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.listarAtualizacoes(id, usuario);
   }
 
   @ApiOperation({ summary: 'Busca previdência por ID com meta semanal calculada' })
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.buscarPorId(id);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.buscarPorId(id, usuario);
   }
 
   @ApiOperation({ summary: 'Cria previdência — placar_atual inicializado com placar_inicial' })
   @Post()
-  criar(@Body() dto: CriarPrevidenciaDto) {
-    return this.previdenciasService.criar(dto);
+  criar(@Body() dto: CriarPrevidenciaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados da previdência (datas, placares, inatividade, verbo)' })
   @Put(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarPrevidenciaDto) {
-    return this.previdenciasService.atualizar(id, dto);
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarPrevidenciaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove previdência e todo seu histórico em cascata' })
   @Post(':id/remover')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.remover(id);
+  remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Duplica previdência (reinicia placar_atual para placar_inicial)' })
   @Post(':id/duplicar')
-  duplicar(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.duplicar(id);
+  duplicar(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.duplicar(id, usuario);
   }
 
   @ApiOperation({ summary: 'Registra atualização semanal de placar — cria histórico e atualiza placar_atual' })
@@ -84,7 +84,7 @@ export class PrevidenciasController {
 
   @ApiOperation({ summary: 'Remove uma atualização de placar específica do histórico' })
   @Delete('atualizacoes/:id')
-  removerAtualizacao(@Param('id', ParseUUIDPipe) id: string) {
-    return this.previdenciasService.removerAtualizacao(id);
+  removerAtualizacao(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.previdenciasService.removerAtualizacao(id, usuario);
   }
 }

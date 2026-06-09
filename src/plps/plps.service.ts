@@ -1,20 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { calcularPlp, calcularMediaPlp } from '../common/utils/calculos.util';
+import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
+import { escopoJogoPorId } from '../common/utils/permissoes.util';
 import { CriarPlpDto } from './dto/plp.dto';
 
 @Injectable()
 export class PlpsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listarPorPrevidencia(idPrevidencia: string) {
+  async listarPorPrevidencia(idPrevidencia: string, solicitante: UsuarioAutenticado) {
     return this.prisma.plp.findMany({
-      where: { id_previdencia: idPrevidencia, deletado_em: null },
+      where: {
+        id_previdencia: idPrevidencia,
+        deletado_em: null,
+        previdencia: { jogo: escopoJogoPorId(solicitante) },
+      },
       orderBy: { data_criacao: 'desc' },
     });
   }
 
-  async criar(dto: CriarPlpDto) {
+  async criar(dto: CriarPlpDto, solicitante: UsuarioAutenticado) {
+    const previdencia = await this.prisma.previdencia.findFirst({
+      where: { AND: [{ id_previdencia: dto.id_previdencia, deletado_em: null }, { jogo: escopoJogoPorId(solicitante) }] },
+      select: { id_previdencia: true },
+    });
+    if (!previdencia) throw new NotFoundException('Previdência não encontrada');
+
     const valorPlp = calcularPlp(dto.propagadores, dto.detratores, dto.respondentes);
 
     const plp = await this.prisma.plp.create({
@@ -34,8 +46,10 @@ export class PlpsService {
     return plp;
   }
 
-  async remover(id: string) {
-    const plp = await this.prisma.plp.findFirst({ where: { id_plp: id, deletado_em: null } });
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    const plp = await this.prisma.plp.findFirst({
+      where: { AND: [{ id_plp: id, deletado_em: null }, { previdencia: { jogo: escopoJogoPorId(solicitante) } }] },
+    });
     if (!plp) throw new NotFoundException('PLP não encontrado');
 
     await this.prisma.plp.update({

@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { calcularProgressoPrevidencia } from '../common/utils/calculos.util';
+import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
+import { escopoCopaPorId } from '../common/utils/permissoes.util';
 
 @Injectable()
 export class GraficosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async graficoPrevidencias(idCopa: string) {
+  async graficoPrevidencias(idCopa: string, solicitante: UsuarioAutenticado) {
     const previdencias = await this.prisma.previdencia.findMany({
       where: {
         deletado_em: null,
-        jogo: { id_copa: idCopa, deletado_em: null },
+        jogo: { id_copa: idCopa, deletado_em: null, copa: escopoCopaPorId(solicitante) },
       },
       include: {
         jogo: true,
@@ -48,9 +50,9 @@ export class GraficosService {
     });
   }
 
-  async graficoJogos(idCopa: string) {
+  async graficoJogos(idCopa: string, solicitante: UsuarioAutenticado) {
     const jogos = await this.prisma.jogo.findMany({
-      where: { id_copa: idCopa, deletado_em: null },
+      where: { id_copa: idCopa, deletado_em: null, copa: escopoCopaPorId(solicitante) },
       include: {
         previdencias: {
           where: { deletado_em: null },

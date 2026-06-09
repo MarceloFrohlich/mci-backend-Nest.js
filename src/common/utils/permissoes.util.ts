@@ -154,6 +154,12 @@ export function escopoJogoPorId(usuario: UsuarioAutenticado) {
   return { deletado_em: null, copa: escopoCopaPorId(usuario) };
 }
 
+// Filtro de relação para escopar previdências (e seus filhos) pelo jogo/copa do usuário.
+// Use como `jogo: escopoJogoDaPrevidencia(usuario)` dentro do where de uma previdência.
+export function escopoJogoDaPrevidencia(usuario: UsuarioAutenticado) {
+  return escopoJogoPorId(usuario);
+}
+
 export function filtroLideres(usuario: UsuarioAutenticado) {
   if (isAdminGlobal(usuario)) return { deletado_em: null };
   return { id_franqueadora: usuario.relacao, deletado_em: null };
