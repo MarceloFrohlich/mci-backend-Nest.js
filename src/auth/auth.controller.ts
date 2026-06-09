@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -48,6 +49,7 @@ export class AuthController {
       },
     },
   }})
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
@@ -93,6 +95,7 @@ export class AuthController {
       },
     },
   })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('esqueci-senha')
   esqueciSenha(@Body() dto: EsqueciSenhaDto) {
     return this.authService.esqueciSenha(dto);
@@ -111,6 +114,7 @@ export class AuthController {
     schema: { example: { mensagem: 'Senha redefinida com sucesso' } },
   })
   @ApiResponse({ status: 400, description: 'Código inválido/expirado ou senhas não coincidem' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('redefinir-senha')
   redefinirSenha(@Body() dto: RedefinirSenhaDto) {
     return this.authService.redefinirSenha(dto);

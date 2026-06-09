@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsOptional, IsUUID } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, IsUUID } from 'class-validator';
 
 export class AtualizarUsuarioDto {
   @ApiPropertyOptional({
@@ -27,6 +27,7 @@ export class AtualizarUsuarioDto {
   })
   @IsOptional()
   @IsInt()
+  @IsIn([1, 2], { message: 'Perfil de acesso inválido' })
   id_role?: number;
 
   @ApiPropertyOptional({
@@ -37,6 +38,7 @@ export class AtualizarUsuarioDto {
   })
   @IsOptional()
   @IsInt()
+  @IsIn([1, 2, 3], { message: 'Nível hierárquico inválido' })
   id_nivel?: number;
 
   @ApiPropertyOptional({

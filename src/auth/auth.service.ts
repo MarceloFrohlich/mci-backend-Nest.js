@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { randomInt } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
@@ -144,8 +145,15 @@ export class AuthService {
 
     if (!usuario) return resposta;
 
-    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    // Gerador criptograficamente seguro (não usar Math.random para segredos)
+    const codigo = String(randomInt(100000, 1000000));
     const expiraEm = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    // Invalida códigos anteriores ainda não usados para que só o mais recente seja válido
+    await this.prisma.tokenRecuperacaoSenha.updateMany({
+      where: { id_usuario: usuario.id_usuario, usado_em: null },
+      data: { usado_em: new Date() },
+    });
 
     await this.prisma.tokenRecuperacaoSenha.create({
       data: {
