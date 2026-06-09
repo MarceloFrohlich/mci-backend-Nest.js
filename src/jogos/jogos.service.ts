@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos } from '../common/utils/permissoes.util';
 import { gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
-import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto } from './dto/jogo.dto';
+import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, DuplicarJogoDto } from './dto/jogo.dto';
 
 function calcularSemanas(dataInicio: Date, dataFim: Date): number {
   return differenceInWeeks(dataFim, dataInicio) + 1;
@@ -256,25 +256,70 @@ export class JogosService {
     return jogos.map(enriquecerJogo);
   }
 
-  async duplicar(id: string) {
+  async duplicar(id: string, dto: DuplicarJogoDto) {
     const original = await this.buscarPorId(id);
 
-    return this.prisma.jogo.create({
-      data: {
-        id_copa: original.id_copa,
-        id_lider: original.id_lider,
-        nome: `${original.nome} (cópia)`,
-        verbo: original.verbo,
-        medida: original.medida,
-        de: original.de,
-        para: original.para,
-        data_inicio: original.data_inicio,
-        data_fim: original.data_fim,
-        observacao: original.observacao,
-        tem_plp: original.tem_plp,
-      },
-      include: INCLUDE_JOGO,
-    });
+    const copasDestino = dto.ids_copas_destino.filter((c) => c != null && c.length > 0);
+    if (copasDestino.length === 0) {
+      throw new BadRequestException('Informe ao menos uma copa de destino');
+    }
+
+    return Promise.all(
+      copasDestino.map((idCopa) =>
+        this.prisma.$transaction(async (tx) => {
+          const jogo = await tx.jogo.create({
+            data: {
+              id_copa: idCopa,
+              id_lider: null,
+              nome: original.nome,
+              verbo: original.verbo,
+              medida: original.medida,
+              de: original.de,
+              para: original.para,
+              data_inicio: original.data_inicio,
+              data_fim: original.data_fim,
+              observacao: original.observacao,
+              tem_plp: original.tem_plp,
+              semanas: original.semanas ?? calcularSemanas(original.data_inicio, original.data_fim),
+            },
+          });
+
+          if (original.previdencias && original.previdencias.length > 0) {
+            await Promise.all(
+              original.previdencias.map((prev: any) =>
+                tx.previdencia.create({
+                  data: {
+                    id_jogo: jogo.id_jogo,
+                    unidade_medida: prev.unidade_medida,
+                    placar_desejado: prev.placar_desejado,
+                    data_inicio: prev.data_inicio,
+                    data_fim: prev.data_fim,
+                    inativo_de: prev.inativo_de,
+                    inativo_ate: prev.inativo_ate,
+                    verbo: prev.verbo,
+                    excluir_periodo: prev.excluir_periodo,
+                  },
+                }),
+              ),
+            );
+          }
+
+          const criado = await tx.jogo.findFirst({
+            where: { id_jogo: jogo.id_jogo },
+            include: INCLUDE_JOGO,
+          });
+          return enriquecerJogo(criado);
+        }).catch((e) => {
+          if (e instanceof PrismaClientKnownRequestError && e.code === 'P2003') {
+            const campo = String((e.meta as any)?.field_name ?? '');
+            if (campo.includes('id_copa')) throw new BadRequestException('Copa de destino não encontrada');
+            if (campo.includes('id_lider')) throw new BadRequestException('Líder não encontrado');
+            throw new BadRequestException('Referência inválida: registro relacionado não encontrado');
+          }
+          throw e;
+        }),
+      ),
+    );
   }
 
   async atualizarStatus(idJogo: string, status: string, valor: string) {
