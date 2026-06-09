@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -18,6 +17,8 @@ import { RelatoriosModule } from './relatorios/relatorios.module';
 
 @Module({
   imports: [
+    // Rate limit disponível para uso seletivo via @UseGuards(ThrottlerGuard) — NÃO é global,
+    // para não impactar requisições normais de dados (ex.: múltiplos usuários atrás de um mesmo IP).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     PrismaModule,
     AuthModule,
@@ -34,6 +35,5 @@ import { RelatoriosModule } from './relatorios/relatorios.module';
     GraficosModule,
     RelatoriosModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
