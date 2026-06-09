@@ -39,8 +39,8 @@ export class DepartamentosController {
 
   @ApiOperation({ summary: 'Cria novo departamento vinculado a uma filial' })
   @Post()
-  criar(@Body() dto: CriarDepartamentoDto) {
-    return this.departamentosService.criar(dto);
+  criar(@Body() dto: CriarDepartamentoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.departamentosService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza departamento' })

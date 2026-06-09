@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroDepartamentos } from '../common/utils/permissoes.util';
+import { filtroDepartamentos, filtroFiliais } from '../common/utils/permissoes.util';
 import {
   CriarDepartamentoDto,
   AtualizarDepartamentoDto,
@@ -33,7 +33,13 @@ export class DepartamentosService {
     return departamento;
   }
 
-  async criar(dto: CriarDepartamentoDto) {
+  async criar(dto: CriarDepartamentoDto, solicitante: UsuarioAutenticado) {
+    const filial = await this.prisma.filial.findFirst({
+      where: { AND: [{ id_filial: dto.id_filial, deletado_em: null }, filtroFiliais(solicitante)] },
+      select: { id_filial: true },
+    });
+    if (!filial) throw new NotFoundException('Filial não encontrada');
+
     return this.prisma.departamento.create({
       data: { nome: dto.nome, id_filial: dto.id_filial },
       include: INCLUDE_DEPARTAMENTO,

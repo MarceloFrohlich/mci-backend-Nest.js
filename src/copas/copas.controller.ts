@@ -39,8 +39,8 @@ export class CopasController {
 
   @ApiOperation({ summary: 'Cria copa — aceita múltiplos departamentos (cria uma copa por departamento)' })
   @Post()
-  criar(@Body() dto: CriarCopaDto) {
-    return this.copasService.criar(dto);
+  criar(@Body() dto: CriarCopaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.copasService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados da copa' })

@@ -63,8 +63,18 @@ export class JogosService {
     return enriquecerJogo(jogo);
   }
 
-  async criar(dto: CriarJogoDto) {
+  async criar(dto: CriarJogoDto, solicitante: UsuarioAutenticado) {
     const copas = dto.ids_copas.filter((id) => id != null && id.length > 0);
+
+    // Garante que todas as copas de destino estão no escopo do usuário
+    const copasPermitidas = await this.prisma.copa.findMany({
+      where: { AND: [{ id_copa: { in: copas }, deletado_em: null }, escopoCopaPorId(solicitante)] },
+      select: { id_copa: true },
+    });
+    const idsPermitidos = new Set(copasPermitidas.map((c) => c.id_copa));
+    if (copas.some((c) => !idsPermitidos.has(c))) {
+      throw new ForbiddenException('Uma ou mais copas de destino não existem ou estão fora do seu acesso');
+    }
 
     for (const prev of dto.previdencias ?? []) {
       const sugestao = sugerirMetaInteira(

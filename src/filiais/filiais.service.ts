@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroFiliais } from '../common/utils/permissoes.util';
+import { filtroFiliais, filtroFranqueadoras } from '../common/utils/permissoes.util';
 import { CriarFilialDto, AtualizarFilialDto, FiltrarFilialDto } from './dto/filial.dto';
 
 const INCLUDE_FILIAL = { franqueadora: true };
@@ -27,7 +27,13 @@ export class FiliaisService {
     return filial;
   }
 
-  async criar(dto: CriarFilialDto) {
+  async criar(dto: CriarFilialDto, solicitante: UsuarioAutenticado) {
+    const franqueadora = await this.prisma.franqueadora.findFirst({
+      where: { AND: [{ id_franqueadora: dto.id_franqueadora, deletado_em: null }, filtroFranqueadoras(solicitante)] },
+      select: { id_franqueadora: true },
+    });
+    if (!franqueadora) throw new NotFoundException('Franqueadora não encontrada');
+
     return this.prisma.filial.create({
       data: { nome: dto.nome, id_franqueadora: dto.id_franqueadora },
       include: INCLUDE_FILIAL,

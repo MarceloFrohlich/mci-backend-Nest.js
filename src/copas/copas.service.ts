@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroCopas, escopoCopaPorId } from '../common/utils/permissoes.util';
+import { filtroCopas, filtroDepartamentos, escopoCopaPorId } from '../common/utils/permissoes.util';
 import { CriarCopaDto, AtualizarCopaDto, FiltrarCopaDto } from './dto/copa.dto';
 
 const INCLUDE_COPA = {
@@ -30,8 +30,18 @@ export class CopasService {
     return copa;
   }
 
-  async criar(dto: CriarCopaDto) {
+  async criar(dto: CriarCopaDto, solicitante: UsuarioAutenticado) {
     const departamentos = dto.ids_departamentos.filter((id) => id != null && id.length > 0);
+
+    // Garante que todos os departamentos de destino estão no escopo do usuário
+    const permitidos = await this.prisma.departamento.findMany({
+      where: { AND: [{ id_departamento: { in: departamentos }, deletado_em: null }, filtroDepartamentos(solicitante)] },
+      select: { id_departamento: true },
+    });
+    const idsPermitidos = new Set(permitidos.map((d) => d.id_departamento));
+    if (departamentos.some((d) => !idsPermitidos.has(d))) {
+      throw new ForbiddenException('Um ou mais departamentos de destino não existem ou estão fora do seu acesso');
+    }
 
     const copas = await Promise.all(
       departamentos.map((idDept) =>

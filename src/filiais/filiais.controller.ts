@@ -33,8 +33,8 @@ export class FiliaisController {
 
   @ApiOperation({ summary: 'Cria nova filial vinculada a uma franqueadora' })
   @Post()
-  criar(@Body() dto: CriarFilialDto) {
-    return this.filiaisService.criar(dto);
+  criar(@Body() dto: CriarFilialDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.filiaisService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza filial' })

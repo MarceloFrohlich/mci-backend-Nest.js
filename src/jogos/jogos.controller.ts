@@ -53,8 +53,8 @@ export class JogosController {
 
   @ApiOperation({ summary: 'Cria jogo em uma ou mais copas (retorna array)' })
   @Post()
-  criar(@Body() dto: CriarJogoDto) {
-    return this.jogosService.criar(dto);
+  criar(@Body() dto: CriarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados do jogo' })
