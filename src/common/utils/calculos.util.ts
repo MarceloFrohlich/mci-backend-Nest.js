@@ -278,6 +278,34 @@ export interface ProgressoPrevidencia {
   percentual: number;
 }
 
+export interface ProgressoTotalPrevidencia {
+  valor_total: number;
+  valor_atual: number;
+  percentual: number;
+}
+
+/**
+ * Progresso TOTAL (anual): compara o que já foi realizado contra a meta cheia
+ * do período inteiro (placar_desejado − placar_inicial), sem considerar o
+ * ritmo/tempo decorrido. Complementa o progresso "até hoje" devolvido por
+ * calcularProgressoPrevidencia.
+ */
+export function calcularProgressoTotalPrevidencia(
+  placarInicial: number,
+  placarAtual: number,
+  placarDesejado: number,
+): ProgressoTotalPrevidencia {
+  const total = placarDesejado - placarInicial;
+  const valorAtual = placarAtual - placarInicial;
+  const percentual = total > 0 ? parseFloat(((valorAtual / total) * 100).toFixed(2)) : 0;
+
+  return {
+    valor_total: total,
+    valor_atual: valorAtual,
+    percentual,
+  };
+}
+
 export function calcularProgressoPrevidencia(
   placarInicial: number,
   placarAtual: number,

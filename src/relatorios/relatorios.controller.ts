@@ -28,6 +28,14 @@ export class RelatoriosController {
     return this.relatoriosService.gerarRelatorio(id, usuario);
   }
 
+  @ApiOperation({
+    summary: 'Lista todas as previdências de uma copa (de todos os jogos) com meta semanal e progresso atual (até hoje) e total (anual) em percentual',
+  })
+  @Get('copa/:id/previdencias')
+  listarPrevidenciasPorCopa(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.relatoriosService.listarPrevidenciasPorCopa(id, usuario);
+  }
+
   @ApiOperation({ summary: 'Cria ou atualiza status de um jogo' })
   @Post('status/:idJogo')
   criarStatus(@Param('idJogo', ParseUUIDPipe) idJogo: string, @Body() dto: StatusDto, @UsuarioAtual() usuario: UsuarioAutenticado) {

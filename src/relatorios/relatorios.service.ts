@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { calcularMetaSemanal, calcularProgressoPrevidencia } from '../common/utils/calculos.util';
+import { calcularMetaSemanal, calcularProgressoPrevidencia, calcularProgressoTotalPrevidencia } from '../common/utils/calculos.util';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { escopoCopaPorId, escopoJogoPorId } from '../common/utils/permissoes.util';
 
@@ -58,6 +58,51 @@ export class RelatoriosService {
     });
 
     return { ...copa, jogos: jogosComCalculos };
+  }
+
+  async listarPrevidenciasPorCopa(idCopa: string, solicitante: UsuarioAutenticado) {
+    const copa = await this.prisma.copa.findFirst({
+      where: { AND: [{ id_copa: idCopa, deletado_em: null }, escopoCopaPorId(solicitante)] },
+      select: { id_copa: true },
+    });
+
+    if (!copa) throw new NotFoundException('Copa não encontrada');
+
+    const previdencias = await this.prisma.previdencia.findMany({
+      where: {
+        deletado_em: null,
+        jogo: { id_copa: idCopa, deletado_em: null },
+      },
+      orderBy: { data_criacao: 'asc' },
+      include: {
+        atualizacoes: {
+          where: { deletado_em: null },
+          orderBy: { data_criacao: 'desc' },
+          take: 5,
+        },
+        plps: {
+          where: { deletado_em: null },
+          orderBy: { data_criacao: 'desc' },
+          take: 5,
+        },
+        observacoes: {
+          where: { deletado_em: null },
+          orderBy: { data_criacao: 'desc' },
+        },
+      },
+    });
+
+    return previdencias.map((p) => ({
+      ...p,
+      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
+      progresso_atual: calcularProgressoPrevidencia(
+        p.placar_inicial, p.placar_atual, p.placar_desejado,
+        p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
+      ),
+      progresso_total: calcularProgressoTotalPrevidencia(
+        p.placar_inicial, p.placar_atual, p.placar_desejado,
+      ),
+    }));
   }
 
   async criarStatus(idJogo: string, status: string, valor: string, solicitante: UsuarioAutenticado) {
