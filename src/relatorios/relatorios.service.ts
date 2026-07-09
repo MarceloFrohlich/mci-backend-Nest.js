@@ -68,40 +68,46 @@ export class RelatoriosService {
 
     if (!copa) throw new NotFoundException('Copa não encontrada');
 
-    const previdencias = await this.prisma.previdencia.findMany({
-      where: {
-        deletado_em: null,
-        jogo: { id_copa: idCopa, deletado_em: null },
-      },
+    const jogos = await this.prisma.jogo.findMany({
+      where: { id_copa: idCopa, deletado_em: null },
       orderBy: { data_criacao: 'asc' },
       include: {
-        atualizacoes: {
+        previdencias: {
           where: { deletado_em: null },
-          orderBy: { data_criacao: 'desc' },
-          take: 5,
-        },
-        plps: {
-          where: { deletado_em: null },
-          orderBy: { data_criacao: 'desc' },
-          take: 5,
-        },
-        observacoes: {
-          where: { deletado_em: null },
-          orderBy: { data_criacao: 'desc' },
+          orderBy: { data_criacao: 'asc' },
+          include: {
+            atualizacoes: {
+              where: { deletado_em: null },
+              orderBy: { data_criacao: 'desc' },
+              take: 5,
+            },
+            plps: {
+              where: { deletado_em: null },
+              orderBy: { data_criacao: 'desc' },
+              take: 5,
+            },
+            observacoes: {
+              where: { deletado_em: null },
+              orderBy: { data_criacao: 'desc' },
+            },
+          },
         },
       },
     });
 
-    return previdencias.map((p) => ({
-      ...p,
-      meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
-      progresso_atual: calcularProgressoPrevidencia(
-        p.placar_inicial, p.placar_atual, p.placar_desejado,
-        p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
-      ),
-      progresso_total: calcularProgressoTotalPrevidencia(
-        p.placar_inicial, p.placar_atual, p.placar_desejado,
-      ),
+    return jogos.map((jogo) => ({
+      ...jogo,
+      previdencias: jogo.previdencias.map((p) => ({
+        ...p,
+        meta_semanal: calcularMetaSemanal(p.placar_inicial, p.placar_desejado, p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate),
+        progresso_atual: calcularProgressoPrevidencia(
+          p.placar_inicial, p.placar_atual, p.placar_desejado,
+          p.data_inicio, p.data_fim, p.inativo_de, p.inativo_ate,
+        ),
+        progresso_total: calcularProgressoTotalPrevidencia(
+          p.placar_inicial, p.placar_atual, p.placar_desejado,
+        ),
+      })),
     }));
   }
 
