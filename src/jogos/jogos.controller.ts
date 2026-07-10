@@ -1,17 +1,20 @@
 import { Controller, Get, Post, Put, Patch, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JogosService } from './jogos.service';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNumber, IsOptional } from 'class-validator';
 
 class AtualizarStatusDto {
-  @ApiPropertyOptional({ description: 'Status do jogo', example: 'ativo' })
-  @IsOptional() @IsString() status?: string;
-  @ApiPropertyOptional({ description: 'Valor associado ao status', example: '100' })
-  @IsOptional() @IsString() valor?: string;
+  @ApiPropertyOptional({
+    description: "Resultado da meta ('success' ou 'unsuccess'). Quando o jogo tem meta (para), é calculado automaticamente a partir do valor e este campo é ignorado",
+    example: 'success',
+  })
+  @IsOptional() @IsIn(['success', 'unsuccess']) status?: string;
+  @ApiProperty({ description: 'Valor atingido do MCI', example: 100, type: Number })
+  @IsNumber() valor: number;
 }
 
 @ApiTags('Jogos')
@@ -77,8 +80,8 @@ export class JogosController {
 
   @ApiOperation({ summary: 'Atualiza ou cria status do jogo (cria se não existir)' })
   @Patch(':id/status')
-  atualizarStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarStatusDto) {
-    return this.jogosService.atualizarStatus(id, dto.status, dto.valor);
+  atualizarStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarStatusDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.jogosService.atualizarStatus(id, dto.status, dto.valor, usuario);
   }
 
   @ApiOperation({ summary: 'Filtra jogos por nome, copa, departamento ou líder' })

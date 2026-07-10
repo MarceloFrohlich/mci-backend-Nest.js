@@ -1,4 +1,20 @@
+import { BadRequestException } from '@nestjs/common';
 import { addDays, addWeeks, differenceInWeeks, getISOWeek, getISOWeekYear, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+
+/**
+ * Define o resultado da avaliação de um MCI (jogo): quando o jogo tem meta
+ * cadastrada (para), o resultado é calculado comparando o valor atingido com
+ * a meta; sem meta, vale o status informado pelo cliente.
+ */
+export function definirStatusMeta(valor: number, para: unknown, statusInformado?: string): string {
+  if (para != null) return valor >= Number(para) ? 'success' : 'unsuccess';
+  if (!statusInformado) {
+    throw new BadRequestException(
+      'Informe o status (success/unsuccess): o jogo não possui meta cadastrada para cálculo automático',
+    );
+  }
+  return statusInformado;
+}
 
 function semanaJaDisponivel(inicioSemana: Date, hoje: Date): boolean {
   const anoSemana = getISOWeekYear(inicioSemana);

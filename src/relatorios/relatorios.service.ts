@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { calcularMetaSemanal, calcularProgressoPrevidencia, calcularProgressoTotalPrevidencia } from '../common/utils/calculos.util';
+import { calcularMetaSemanal, calcularProgressoPrevidencia, calcularProgressoTotalPrevidencia, definirStatusMeta } from '../common/utils/calculos.util';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { escopoCopaPorId, escopoJogoPorId } from '../common/utils/permissoes.util';
 
@@ -72,6 +72,8 @@ export class RelatoriosService {
       where: { id_copa: idCopa, deletado_em: null },
       orderBy: { data_criacao: 'asc' },
       include: {
+        lider: true,
+        status: true,
         previdencias: {
           where: { deletado_em: null },
           orderBy: { data_criacao: 'asc' },
@@ -111,12 +113,14 @@ export class RelatoriosService {
     }));
   }
 
-  async criarStatus(idJogo: string, status: string, valor: string, solicitante: UsuarioAutenticado) {
+  async criarStatus(idJogo: string, status: string | undefined, valor: number, solicitante: UsuarioAutenticado) {
     const jogo = await this.prisma.jogo.findFirst({
       where: { AND: [{ id_jogo: idJogo, deletado_em: null }, escopoJogoPorId(solicitante)] },
-      select: { id_jogo: true },
+      select: { id_jogo: true, para: true },
     });
     if (!jogo) throw new NotFoundException('Jogo não encontrado');
+
+    const statusFinal = definirStatusMeta(valor, jogo.para, status);
 
     const existente = await this.prisma.jogoStatus.findFirst({
       where: { id_jogo: idJogo, deletado_em: null },
@@ -125,22 +129,25 @@ export class RelatoriosService {
     if (existente) {
       return this.prisma.jogoStatus.update({
         where: { id_status: existente.id_status },
-        data: { status, valor, data_atualizacao: new Date() },
+        data: { status: statusFinal, valor, data_atualizacao: new Date() },
       });
     }
 
-    return this.prisma.jogoStatus.create({ data: { id_jogo: idJogo, status, valor } });
+    return this.prisma.jogoStatus.create({ data: { id_jogo: idJogo, status: statusFinal, valor } });
   }
 
-  async atualizarStatus(id: string, status: string, valor: string, solicitante: UsuarioAutenticado) {
+  async atualizarStatus(id: string, status: string | undefined, valor: number, solicitante: UsuarioAutenticado) {
     const existente = await this.prisma.jogoStatus.findFirst({
       where: { AND: [{ id_status: id, deletado_em: null }, { jogo: escopoJogoPorId(solicitante) }] },
+      include: { jogo: { select: { para: true } } },
     });
     if (!existente) throw new NotFoundException('Status não encontrado');
 
+    const statusFinal = definirStatusMeta(valor, existente.jogo.para, status);
+
     return this.prisma.jogoStatus.update({
       where: { id_status: id },
-      data: { status, valor, data_atualizacao: new Date() },
+      data: { status: statusFinal, valor, data_atualizacao: new Date() },
     });
   }
 }

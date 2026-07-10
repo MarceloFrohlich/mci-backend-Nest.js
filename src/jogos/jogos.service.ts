@@ -4,7 +4,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos, escopoJogoPorId, escopoCopaPorId } from '../common/utils/permissoes.util';
-import { gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
+import { definirStatusMeta, gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 
 function calcularSemanas(dataInicio: Date, dataFim: Date): number {
@@ -343,7 +343,15 @@ export class JogosService {
     );
   }
 
-  async atualizarStatus(idJogo: string, status: string, valor: string) {
+  async atualizarStatus(idJogo: string, status: string | undefined, valor: number, solicitante: UsuarioAutenticado) {
+    const jogo = await this.prisma.jogo.findFirst({
+      where: { AND: [{ id_jogo: idJogo, deletado_em: null }, escopoJogoPorId(solicitante)] },
+      select: { id_jogo: true, para: true },
+    });
+    if (!jogo) throw new NotFoundException('Jogo não encontrado');
+
+    const statusFinal = definirStatusMeta(valor, jogo.para, status);
+
     const existente = await this.prisma.jogoStatus.findFirst({
       where: { id_jogo: idJogo, deletado_em: null },
     });
@@ -351,12 +359,12 @@ export class JogosService {
     if (existente) {
       return this.prisma.jogoStatus.update({
         where: { id_status: existente.id_status },
-        data: { status, valor, data_atualizacao: new Date() },
+        data: { status: statusFinal, valor, data_atualizacao: new Date() },
       });
     }
 
     return this.prisma.jogoStatus.create({
-      data: { id_jogo: idJogo, status, valor },
+      data: { id_jogo: idJogo, status: statusFinal, valor },
     });
   }
 }

@@ -272,7 +272,7 @@ model JogoStatus {
   id_status        String    @id @default(uuid())
   id_jogo          String    @unique
   status           String?   @db.Text
-  valor            String?   @db.Text
+  valor            Decimal?  @db.Decimal(15, 2)
   data_criacao     DateTime  @default(now())
   data_atualizacao DateTime?
   deletado_em      DateTime?
