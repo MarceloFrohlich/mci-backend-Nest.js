@@ -292,17 +292,19 @@ export class PrevidenciasService {
         }
       }
 
-      const ultimoLancamento = await tx.atualizacaoPrevidencia.findFirst({
-        where: { id_previdencia: idPrevidencia, deletado_em: null },
-        orderBy: { numero_semana: 'desc' },
+      // placar_atual é o acumulado: inicial + soma do realizado de todas as semanas lançadas
+      const somaRealizado = await tx.atualizacaoPrevidencia.aggregate({
+        where: { id_previdencia: idPrevidencia, deletado_em: null, numero_semana: { not: null } },
+        _sum: { placar_atual: true },
       });
 
-      if (ultimoLancamento) {
-        await tx.previdencia.update({
-          where: { id_previdencia: idPrevidencia },
-          data: { placar_atual: ultimoLancamento.placar_atual, data_atualizacao: new Date() },
-        });
-      }
+      await tx.previdencia.update({
+        where: { id_previdencia: idPrevidencia },
+        data: {
+          placar_atual: previdencia.placar_inicial + (somaRealizado._sum.placar_atual ?? 0),
+          data_atualizacao: new Date(),
+        },
+      });
     });
 
     return this.buscarPorId(idPrevidencia, solicitante);
