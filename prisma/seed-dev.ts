@@ -17,7 +17,6 @@ const EMAILS_DEMO = [
 
 const SEMANAS_TOTAIS = 36;
 const SEMANAS_DECORRIDAS = 16; // semanas já lançadas antes da semana corrente
-const META_SEMANAL = 10;
 
 async function limparDemo() {
   const franqueadora = await prisma.franqueadora.findFirst({
@@ -63,6 +62,9 @@ async function limparDemo() {
 
 interface PerfilPrevidencia {
   nomeJogo: string;
+  verbo: string;
+  medida: string;
+  metaSemanal: number;
   // realizado por semana (1..SEMANAS_DECORRIDAS)
   realizado: (semana: number) => number;
   // compromisso lançado em cada semana (null = sem compromisso)
@@ -70,6 +72,17 @@ interface PerfilPrevidencia {
   // lança também na semana corrente (17ª)?
   lancaSemanaAtual: boolean;
   realizadoSemanaAtual?: number;
+  temPlp?: boolean;
+  observacoes?: string[];
+}
+
+function calcularPlpSemana(semana: number) {
+  const respondentes = 20;
+  const propagadores = 10 + (semana % 5);
+  const detratores = 3 + (semana % 3);
+  const neutros = respondentes - propagadores - detratores;
+  const plp = parseFloat((((propagadores - detratores) / respondentes) * 100).toFixed(2));
+  return { respondentes, propagadores, detratores, neutros, plp };
 }
 
 async function main() {
@@ -118,30 +131,63 @@ async function main() {
     await prisma.usuarioAno.create({ data: { id_usuario: usuario.id_usuario, ano } });
   }
 
-  const placarDesejado = META_SEMANAL * SEMANAS_TOTAIS;
-
   // perfis por departamento: cada um exercita um estado do dashboard
-  const equipes: { departamento: any; lider: any; nomeCopa: string; perfis: PerfilPrevidencia[] }[] = [
+  const equipes: { departamento: any; lider: any; nomeCopa: string; objetivo: string; perfis: PerfilPrevidencia[] }[] = [
     {
       departamento: depVendas,
       lider: liderUm,
       nomeCopa: 'Copa de Vendas Demo',
+      objetivo: 'Dobrar a carteira de clientes ativos até o fim do ano',
       perfis: [
         {
           // meta atingida antes do prazo (400 lançados de 360) + compromissos cumpridos
           nomeJogo: 'Prospecção de Clientes',
+          verbo: 'Prospectar',
+          medida: 'clientes',
+          metaSemanal: 10,
           realizado: () => 25,
           compromisso: () => 25,
           lancaSemanaAtual: true,
           realizadoSemanaAtual: 5,
+          observacoes: [
+            'Meta atingida com 20 semanas de antecedência. Equipe focando agora em qualidade do funil.',
+            'Parceria com a associação regional acelerou as indicações.',
+          ],
         },
         {
           // on track com folga pequena
           nomeJogo: 'Visitas de Retorno',
+          verbo: 'Visitar',
+          medida: 'visitas',
+          metaSemanal: 10,
           realizado: () => 12,
           compromisso: () => 12,
           lancaSemanaAtual: true,
           realizadoSemanaAtual: 12,
+        },
+        {
+          // exatamente no ritmo, sem folga
+          nomeJogo: 'Propostas Enviadas',
+          verbo: 'Enviar',
+          medida: 'propostas',
+          metaSemanal: 5,
+          realizado: () => 5,
+          compromisso: () => 5,
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 5,
+        },
+        {
+          // pouco acima do ritmo + pesquisa PLP acompanhando os fechamentos
+          nomeJogo: 'Contratos Fechados',
+          verbo: 'Fechar',
+          medida: 'contratos',
+          metaSemanal: 3,
+          realizado: () => 4,
+          compromisso: () => 3,
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 4,
+          temPlp: true,
+          observacoes: ['Clientes fechados via indicação apresentam PLP consistentemente maior.'],
         },
       ],
     },
@@ -149,14 +195,42 @@ async function main() {
       departamento: depMarketing,
       lider: liderUm,
       nomeCopa: 'Copa de Marketing Demo',
+      objetivo: 'Gerar demanda qualificada para o time comercial',
       perfis: [
         {
-          // on track; compromissos alternam entre cumpridos e não cumpridos
+          // on track; compromissos alternam entre cumpridos e não cumpridos + PLP
           nomeJogo: 'Leads Qualificados',
+          verbo: 'Qualificar',
+          medida: 'leads',
+          metaSemanal: 10,
           realizado: () => 11,
           compromisso: (semana) => (semana % 2 === 0 ? 12 : 10),
           lancaSemanaAtual: true,
           realizadoSemanaAtual: 11,
+          temPlp: true,
+        },
+        {
+          // recuperação: começou mal e reagiu na segunda metade
+          nomeJogo: 'Publicações no Blog',
+          verbo: 'Publicar',
+          medida: 'artigos',
+          metaSemanal: 8,
+          realizado: (semana) => (semana <= 8 ? 5 : 12),
+          compromisso: (semana) => (semana <= 8 ? 8 : 12),
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 12,
+          observacoes: ['Reforço de redator freelancer a partir da semana 9 virou o jogo.'],
+        },
+        {
+          // meta pequena, em dia
+          nomeJogo: 'Eventos Realizados',
+          verbo: 'Realizar',
+          medida: 'eventos',
+          metaSemanal: 2,
+          realizado: () => 2,
+          compromisso: () => 2,
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 2,
         },
       ],
     },
@@ -164,14 +238,41 @@ async function main() {
       departamento: depTi,
       lider: liderDois,
       nomeCopa: 'Copa de TI Demo',
+      objetivo: 'Elevar a qualidade do atendimento interno',
       perfis: [
         {
           // constantemente abaixo da meta (ritmo ~80%) e compromissos não cumpridos
           nomeJogo: 'Chamados Resolvidos',
+          verbo: 'Resolver',
+          medida: 'chamados',
+          metaSemanal: 10,
           realizado: () => 8,
           compromisso: () => 10,
           lancaSemanaAtual: true,
           realizadoSemanaAtual: 8,
+          observacoes: ['Fila represada pela migração do sistema acadêmico. Plano de ação em andamento.'],
+        },
+        {
+          // em dia, sem folga
+          nomeJogo: 'Sistemas Atualizados',
+          verbo: 'Atualizar',
+          medida: 'sistemas',
+          metaSemanal: 4,
+          realizado: () => 4,
+          compromisso: () => 4,
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 4,
+        },
+        {
+          // irregular: alterna semanas fortes e fracas, média no ritmo
+          nomeJogo: 'Treinamentos de Equipe',
+          verbo: 'Treinar',
+          medida: 'turmas',
+          metaSemanal: 2,
+          realizado: (semana) => (semana % 2 === 0 ? 4 : 0),
+          compromisso: () => 2,
+          lancaSemanaAtual: true,
+          realizadoSemanaAtual: 4,
         },
       ],
     },
@@ -179,12 +280,37 @@ async function main() {
       departamento: depFinanceira,
       lider: liderDois,
       nomeCopa: 'Copa Financeira Demo',
+      objetivo: 'Sanear a carteira e dar previsibilidade ao caixa',
       perfis: [
         {
           // começou bem e desabou: 3+ semanas abaixo (alerta de risco) e sem lançamento na semana atual
           nomeJogo: 'Redução de Inadimplência',
+          verbo: 'Recuperar',
+          medida: 'contratos',
+          metaSemanal: 10,
           realizado: (semana) => (semana <= 8 ? 10 : 3),
           compromisso: () => 10,
+          lancaSemanaAtual: false,
+          observacoes: ['Queda coincide com a saída de dois analistas. Reposição em processo seletivo.'],
+        },
+        {
+          // caiu na semana 11 e também parou de atualizar
+          nomeJogo: 'Relatórios Entregues',
+          verbo: 'Entregar',
+          medida: 'relatórios',
+          metaSemanal: 5,
+          realizado: (semana) => (semana <= 10 ? 5 : 2),
+          compromisso: () => 5,
+          lancaSemanaAtual: false,
+        },
+        {
+          // em dia no realizado, mas a equipe não registrou a semana corrente
+          nomeJogo: 'Auditorias Concluídas',
+          verbo: 'Auditar',
+          medida: 'auditorias',
+          metaSemanal: 1,
+          realizado: () => 1,
+          compromisso: () => 1,
           lancaSemanaAtual: false,
         },
       ],
@@ -192,34 +318,39 @@ async function main() {
   ];
 
   for (const equipe of equipes) {
+    const maiorMeta = Math.max(...equipe.perfis.map((p) => p.metaSemanal)) * SEMANAS_TOTAIS;
+
     const copa = await prisma.copa.create({
       data: {
         nome: equipe.nomeCopa,
         id_departamento: equipe.departamento.id_departamento,
         id_lider: equipe.lider.id_lider,
-        objetivo: `Objetivo da ${equipe.nomeCopa}`,
+        objetivo: equipe.objetivo,
         inicio,
         fim,
         verbo: 'Alcançar',
         medida: 'pontos',
         de: 0,
-        ate: placarDesejado,
+        ate: maiorMeta,
       },
     });
 
     for (const perfil of equipe.perfis) {
+      const placarDesejado = perfil.metaSemanal * SEMANAS_TOTAIS;
+
       const jogo = await prisma.jogo.create({
         data: {
           id_copa: copa.id_copa,
           id_lider: equipe.lider.id_lider,
           nome: perfil.nomeJogo,
-          verbo: 'Alcançar',
-          medida: 'pontos',
+          verbo: perfil.verbo,
+          medida: perfil.medida,
           de: 0,
           para: placarDesejado,
           data_inicio: inicio,
           data_fim: fim,
           semanas: SEMANAS_TOTAIS,
+          tem_plp: perfil.temPlp ?? false,
           data_criacao: inicio, // retro-datado: só a MCI nova deve disparar alerta de criação
         },
       });
@@ -227,21 +358,23 @@ async function main() {
       const previdencia = await prisma.previdencia.create({
         data: {
           id_jogo: jogo.id_jogo,
-          unidade_medida: 'pontos',
+          unidade_medida: perfil.medida,
           placar_inicial: 0,
           placar_atual: 0,
           placar_desejado: placarDesejado,
           data_inicio: inicio,
           data_fim: fim,
-          verbo: 'Alcançar',
+          verbo: perfil.verbo,
         },
       });
 
       let acumulado = 0;
+      const plps: number[] = [];
+
       for (let semana = 1; semana <= SEMANAS_DECORRIDAS; semana++) {
         const realizado = perfil.realizado(semana);
         acumulado += realizado;
-        await prisma.atualizacaoPrevidencia.create({
+        const atualizacao = await prisma.atualizacaoPrevidencia.create({
           data: {
             id_previdencia: previdencia.id_previdencia,
             numero_semana: semana,
@@ -250,27 +383,58 @@ async function main() {
             data_criacao: addDays(inicio, (semana - 1) * 7 + 3), // quinta-feira da semana
           },
         });
+
+        if (perfil.temPlp) {
+          const dadosPlp = calcularPlpSemana(semana);
+          plps.push(dadosPlp.plp);
+          await prisma.plp.create({
+            data: {
+              id_previdencia: previdencia.id_previdencia,
+              id_atualizacao: atualizacao.id_atualizacao,
+              respondentes: dadosPlp.respondentes,
+              propagadores: dadosPlp.propagadores,
+              detratores: dadosPlp.detratores,
+              neutros: dadosPlp.neutros,
+              plp: dadosPlp.plp,
+              data_criacao: addDays(inicio, (semana - 1) * 7 + 3),
+            },
+          });
+        }
       }
 
       if (perfil.lancaSemanaAtual) {
-        const realizado = perfil.realizadoSemanaAtual ?? META_SEMANAL;
+        const realizado = perfil.realizadoSemanaAtual ?? perfil.metaSemanal;
         acumulado += realizado;
         await prisma.atualizacaoPrevidencia.create({
           data: {
             id_previdencia: previdencia.id_previdencia,
             numero_semana: SEMANAS_DECORRIDAS + 1,
             placar_atual: realizado,
-            compromisso: META_SEMANAL,
+            compromisso: perfil.metaSemanal,
             data_criacao: hoje,
           },
         });
       }
 
+      const plpMedia = plps.length > 0
+        ? parseFloat((plps.reduce((acc, v) => acc + v, 0) / plps.length).toFixed(2))
+        : null;
+
       // invariante do sistema: placar_atual = inicial + soma dos lançamentos
       await prisma.previdencia.update({
         where: { id_previdencia: previdencia.id_previdencia },
-        data: { placar_atual: acumulado },
+        data: { placar_atual: acumulado, plp_media: plpMedia },
       });
+
+      for (const [indice, texto] of (perfil.observacoes ?? []).entries()) {
+        await prisma.observacaoPrevidencia.create({
+          data: {
+            id_previdencia: previdencia.id_previdencia,
+            observacao: texto,
+            data_criacao: addDays(inicio, 7 * (4 + indice * 4)),
+          },
+        });
+      }
     }
   }
 
@@ -307,9 +471,11 @@ async function main() {
 
   console.log('Seed de demonstração concluído!');
   console.log('');
-  console.log('Cadeia criada: Educamax Demo > Filial Norte/Sul Demo > 4 equipes');
-  console.log('Perfis: Vendas (meta antecipada + on track), Marketing (on track + MCI nova),');
-  console.log('        TI (abaixo do ritmo), Financeira (em risco + sem atualização na semana)');
+  console.log('Cadeia criada: Educamax Demo > Filial Norte/Sul Demo > 4 equipes, 14 MCIs');
+  console.log('Perfis: Vendas (meta antecipada, on track, no ritmo exato, PLP),');
+  console.log('        Marketing (on track, recuperação, eventos, MCI nova, PLP),');
+  console.log('        TI (abaixo do ritmo, em dia, irregular),');
+  console.log('        Financeira (em risco x2, sem atualização na semana)');
   console.log('');
   console.log('Usuários de teste (senha admin123):');
   console.log('  franqueadora.demo@mci.com  (nível franqueadora)');
