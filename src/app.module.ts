@@ -14,6 +14,7 @@ import { PlpsModule } from './plps/plps.module';
 import { ObservacoesModule } from './observacoes/observacoes.module';
 import { GraficosModule } from './graficos/graficos.module';
 import { RelatoriosModule } from './relatorios/relatorios.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RelatoriosModule } from './relatorios/relatorios.module';
     ObservacoesModule,
     GraficosModule,
     RelatoriosModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
