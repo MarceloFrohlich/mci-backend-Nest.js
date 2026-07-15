@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { UsuarioAutenticado } from '../types/usuario-autenticado.type';
 
 export const ROLE_ADMIN_GLOBAL = 1;
+export const ROLE_ADMIN_LOCAL = 2;
+export const ROLE_USUARIO = 3;
 export const NIVEL_FRANQUEADORA = 1;
 export const NIVEL_FILIAL = 2;
 export const NIVEL_DEPARTAMENTO = 3;
@@ -195,6 +197,49 @@ export async function filtroLideres(usuario: UsuarioAutenticado, prisma: PrismaC
     throw new ForbiddenException('Usuário não tem relação com nenhuma franqueadora');
   }
   return { id_franqueadora: idFranqueadora, deletado_em: null };
+}
+
+// Valida se uma relação (nível + id da entidade) pertence à cadeia do solicitante.
+// Usado para impedir que admin local crie/mova usuários para fora da própria cadeia.
+export async function relacaoNaCadeia(
+  usuario: UsuarioAutenticado,
+  idNivelAlvo: number,
+  relacaoAlvo: string | null,
+  prisma: PrismaClient,
+): Promise<boolean> {
+  if (isAdminGlobal(usuario)) return true;
+  if (!usuario.relacao || !relacaoAlvo) return false;
+
+  if (usuario.id_nivel === NIVEL_FRANQUEADORA) {
+    if (idNivelAlvo === NIVEL_FRANQUEADORA) return relacaoAlvo === usuario.relacao;
+    if (idNivelAlvo === NIVEL_FILIAL) {
+      const filial = await prisma.filial.findFirst({
+        where: { id_filial: relacaoAlvo, id_franqueadora: usuario.relacao, deletado_em: null },
+      });
+      return !!filial;
+    }
+    const departamento = await prisma.departamento.findFirst({
+      where: {
+        id_departamento: relacaoAlvo,
+        deletado_em: null,
+        filial: { id_franqueadora: usuario.relacao, deletado_em: null },
+      },
+    });
+    return !!departamento;
+  }
+
+  if (usuario.id_nivel === NIVEL_FILIAL) {
+    if (idNivelAlvo === NIVEL_FILIAL) return relacaoAlvo === usuario.relacao;
+    if (idNivelAlvo === NIVEL_DEPARTAMENTO) {
+      const departamento = await prisma.departamento.findFirst({
+        where: { id_departamento: relacaoAlvo, id_filial: usuario.relacao, deletado_em: null },
+      });
+      return !!departamento;
+    }
+    return false;
+  }
+
+  return idNivelAlvo === NIVEL_DEPARTAMENTO && relacaoAlvo === usuario.relacao;
 }
 
 export async function filtroUsuarios(usuario: UsuarioAutenticado, prisma: PrismaClient) {

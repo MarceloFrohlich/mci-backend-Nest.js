@@ -3,12 +3,15 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { FiliaisService } from './filiais.service';
 import { CriarFilialDto, AtualizarFilialDto, FiltrarFilialDto } from './dto/filial.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL } from '../common/utils/permissoes.util';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 
 @ApiTags('Filiais')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('filiais')
 export class FiliaisController {
   constructor(private readonly filiaisService: FiliaisService) {}
@@ -32,18 +35,21 @@ export class FiliaisController {
   }
 
   @ApiOperation({ summary: 'Cria nova filial vinculada a uma franqueadora' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post()
   criar(@Body() dto: CriarFilialDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.filiaisService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza filial' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Put(':id')
   atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarFilialDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.filiaisService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove filial em cascata (departamentos)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/remover')
   remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.filiaisService.remover(id, usuario);

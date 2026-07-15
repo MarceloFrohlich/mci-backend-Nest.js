@@ -2,6 +2,9 @@ import { Controller, Get, Post, Patch, Body, Param, ParseUUIDPipe, UseGuards } f
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RelatoriosService } from './relatorios.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL } from '../common/utils/permissoes.util';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { IsIn, IsNumber, IsOptional } from 'class-validator';
@@ -18,7 +21,7 @@ class StatusDto {
 
 @ApiTags('Relatórios')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('relatorios')
 export class RelatoriosController {
   constructor(private readonly relatoriosService: RelatoriosService) {}
@@ -40,6 +43,7 @@ export class RelatoriosController {
   }
 
   @ApiOperation({ summary: 'Cria ou atualiza status de um jogo' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post('status/:idJogo')
   criarStatus(@Param('idJogo', ParseUUIDPipe) idJogo: string, @Body() dto: StatusDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.relatoriosService.criarStatus(idJogo, dto.status, dto.valor, usuario);

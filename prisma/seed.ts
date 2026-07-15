@@ -25,6 +25,15 @@ async function main() {
     },
   });
 
+  const roleUsuario = await prisma.role.upsert({
+    where: { id_role: 3 },
+    update: {},
+    create: {
+      id_role: 3,
+      nome: 'Usuário',
+    },
+  });
+
   // NÍVEIS
   const nivelFranqueadora = await prisma.nivelUsuario.upsert({
     where: { id_nivel: 1 },

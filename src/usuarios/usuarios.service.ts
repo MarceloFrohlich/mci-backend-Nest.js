@@ -1,13 +1,19 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroUsuarios } from '../common/utils/permissoes.util';
+import {
+  filtroUsuarios,
+  isAdminGlobal,
+  relacaoNaCadeia,
+  ROLE_ADMIN_GLOBAL,
+} from '../common/utils/permissoes.util';
 import { CriarUsuarioDto } from './dto/criar-usuario.dto';
 import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 import { FiltrarUsuarioDto } from './dto/filtrar-usuario.dto';
@@ -65,9 +71,28 @@ export class UsuariosService {
     return this.resolverRelacoes(usuarios);
   }
 
-  async buscarPorId(id: string) {
+  // Admin local só cria/edita usuários não-globais dentro da própria cadeia
+  private async validarAlvo(
+    solicitante: UsuarioAutenticado,
+    idRole: number,
+    idNivel: number,
+    relacao: string | null,
+  ) {
+    if (isAdminGlobal(solicitante)) return;
+
+    if (idRole === ROLE_ADMIN_GLOBAL) {
+      throw new ForbiddenException('Apenas o admin global pode gerenciar usuários admin global');
+    }
+    if (!(await relacaoNaCadeia(solicitante, idNivel, relacao, this.prisma))) {
+      throw new ForbiddenException('O vínculo do usuário deve pertencer à sua cadeia');
+    }
+  }
+
+  async buscarPorId(id: string, solicitante: UsuarioAutenticado) {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id_usuario: id, deletado_em: null },
+      where: {
+        AND: [{ id_usuario: id, deletado_em: null }, await filtroUsuarios(solicitante, this.prisma)],
+      },
       include: INCLUDE_USUARIO,
     });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
@@ -75,10 +100,12 @@ export class UsuariosService {
     return enriquecido;
   }
 
-  async criar(dto: CriarUsuarioDto) {
+  async criar(dto: CriarUsuarioDto, solicitante: UsuarioAutenticado) {
     if (dto.senha !== dto.confirmacao_senha) {
       throw new BadRequestException('As senhas não coincidem');
     }
+
+    await this.validarAlvo(solicitante, dto.id_role, dto.id_nivel, dto.relacao ?? null);
 
     const existe = await this.prisma.usuario.findFirst({
       where: { email: dto.email, deletado_em: null },
@@ -100,8 +127,19 @@ export class UsuariosService {
     });
   }
 
-  async atualizar(id: string, dto: AtualizarUsuarioDto) {
-    await this.buscarPorId(id);
+  async atualizar(id: string, dto: AtualizarUsuarioDto, solicitante: UsuarioAutenticado) {
+    const alvo = await this.buscarPorId(id, solicitante);
+
+    if (!isAdminGlobal(solicitante) && alvo.id_role === ROLE_ADMIN_GLOBAL) {
+      throw new ForbiddenException('Apenas o admin global pode gerenciar usuários admin global');
+    }
+
+    await this.validarAlvo(
+      solicitante,
+      dto.id_role ?? alvo.id_role,
+      dto.id_nivel ?? alvo.id_nivel,
+      dto.relacao !== undefined ? dto.relacao : alvo.relacao,
+    );
 
     const dados: any = { data_atualizacao: new Date() };
 
@@ -118,8 +156,12 @@ export class UsuariosService {
     });
   }
 
-  async remover(id: string) {
-    await this.buscarPorId(id);
+  async remover(id: string, solicitante: UsuarioAutenticado) {
+    const alvo = await this.buscarPorId(id, solicitante);
+
+    if (!isAdminGlobal(solicitante) && alvo.id_role === ROLE_ADMIN_GLOBAL) {
+      throw new ForbiddenException('Apenas o admin global pode gerenciar usuários admin global');
+    }
 
     const sufixo = `_deletado_${Date.now()}`;
     return this.prisma.usuario.update({

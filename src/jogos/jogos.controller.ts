@@ -3,6 +3,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional 
 import { JogosService } from './jogos.service';
 import { CriarJogoDto, AtualizarJogoDto, FiltrarJogoDto, ReplicarJogoDto } from './dto/jogo.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL } from '../common/utils/permissoes.util';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { IsIn, IsNumber, IsOptional } from 'class-validator';
@@ -19,7 +22,7 @@ class AtualizarStatusDto {
 
 @ApiTags('Jogos')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('jogos')
 export class JogosController {
   constructor(private readonly jogosService: JogosService) {}
@@ -55,24 +58,28 @@ export class JogosController {
   }
 
   @ApiOperation({ summary: 'Cria jogo em uma ou mais copas (retorna array)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post()
   criar(@Body() dto: CriarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.jogosService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados do jogo' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Put(':id')
   atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.jogosService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove jogo em cascata (previdências, atualizações, PLPs, observações)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/remover')
   remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.jogosService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Replica um jogo (com suas previdências, zeradas) para uma ou mais copas de destino' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/replicar')
   replicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReplicarJogoDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.jogosService.replicar(id, dto, usuario);

@@ -3,12 +3,15 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PrevidenciasService } from './previdencias.service';
 import { CriarPrevidenciaDto, AtualizarPrevidenciaDto, AtualizarPlacarDto, LancarSemanaDto } from './dto/previdencia.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL } from '../common/utils/permissoes.util';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 
 @ApiTags('Previdências')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('previdencias')
 export class PrevidenciasController {
   constructor(private readonly previdenciasService: PrevidenciasService) {}
@@ -38,24 +41,28 @@ export class PrevidenciasController {
   }
 
   @ApiOperation({ summary: 'Cria previdência — placar_atual inicializado com placar_inicial' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post()
   criar(@Body() dto: CriarPrevidenciaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.previdenciasService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados da previdência (datas, placares, inatividade, verbo)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Put(':id')
   atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarPrevidenciaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.previdenciasService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove previdência e todo seu histórico em cascata' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/remover')
   remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.previdenciasService.remover(id, usuario);
   }
 
   @ApiOperation({ summary: 'Duplica previdência (reinicia placar_atual para placar_inicial)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/duplicar')
   duplicar(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.previdenciasService.duplicar(id, usuario);
@@ -83,6 +90,7 @@ export class PrevidenciasController {
   }
 
   @ApiOperation({ summary: 'Remove uma atualização de placar específica do histórico' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Delete('atualizacoes/:id')
   removerAtualizacao(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.previdenciasService.removerAtualizacao(id, usuario);

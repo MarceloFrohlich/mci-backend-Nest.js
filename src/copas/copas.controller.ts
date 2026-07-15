@@ -3,12 +3,15 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CopasService } from './copas.service';
 import { CriarCopaDto, AtualizarCopaDto, FiltrarCopaDto } from './dto/copa.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL } from '../common/utils/permissoes.util';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 
 @ApiTags('Copas')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('copas')
 export class CopasController {
   constructor(private readonly copasService: CopasService) {}
@@ -38,18 +41,21 @@ export class CopasController {
   }
 
   @ApiOperation({ summary: 'Cria copa — aceita múltiplos departamentos (cria uma copa por departamento)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post()
   criar(@Body() dto: CriarCopaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.copasService.criar(dto, usuario);
   }
 
   @ApiOperation({ summary: 'Atualiza dados da copa' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Put(':id')
   atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarCopaDto, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.copasService.atualizar(id, dto, usuario);
   }
 
   @ApiOperation({ summary: 'Remove copa em cascata (jogos, previdências, atualizações, PLPs, observações)' })
+  @Roles(ROLE_ADMIN_GLOBAL, ROLE_ADMIN_LOCAL)
   @Post(':id/remover')
   remover(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
     return this.copasService.remover(id, usuario);

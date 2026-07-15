@@ -13,6 +13,7 @@ const EMAILS_DEMO = [
   'franqueadora.demo@mci.com',
   'filial.demo@mci.com',
   'departamento.demo@mci.com',
+  'usuario.demo@mci.com',
 ];
 
 const SEMANAS_TOTAIS = 36;
@@ -120,13 +121,14 @@ async function main() {
   // usuários de teste por nível (senha admin123)
   const senha = await bcrypt.hash('admin123', 10);
   const usuariosDemo = [
-    { nome: 'Gestor Franqueadora Demo', email: EMAILS_DEMO[0], id_nivel: 1, relacao: franqueadora.id_franqueadora },
-    { nome: 'Gestor Filial Demo', email: EMAILS_DEMO[1], id_nivel: 2, relacao: filialNorte.id_filial },
-    { nome: 'Gestor Departamento Demo', email: EMAILS_DEMO[2], id_nivel: 3, relacao: depVendas.id_departamento },
+    { nome: 'Gestor Franqueadora Demo', email: EMAILS_DEMO[0], id_nivel: 1, relacao: franqueadora.id_franqueadora, id_role: 2 },
+    { nome: 'Gestor Filial Demo', email: EMAILS_DEMO[1], id_nivel: 2, relacao: filialNorte.id_filial, id_role: 2 },
+    { nome: 'Gestor Departamento Demo', email: EMAILS_DEMO[2], id_nivel: 3, relacao: depVendas.id_departamento, id_role: 2 },
+    { nome: 'Usuário Comum Demo', email: EMAILS_DEMO[3], id_nivel: 3, relacao: depVendas.id_departamento, id_role: 3 },
   ];
   for (const dados of usuariosDemo) {
     const usuario = await prisma.usuario.create({
-      data: { ...dados, senha, id_role: 2 },
+      data: { ...dados, senha },
     });
     await prisma.usuarioAno.create({ data: { id_usuario: usuario.id_usuario, ano } });
   }
@@ -478,9 +480,10 @@ async function main() {
   console.log('        Financeira (em risco x2, sem atualização na semana)');
   console.log('');
   console.log('Usuários de teste (senha admin123):');
-  console.log('  franqueadora.demo@mci.com  (nível franqueadora)');
-  console.log('  filial.demo@mci.com        (nível filial - Filial Norte)');
-  console.log('  departamento.demo@mci.com  (nível departamento - Equipe de Vendas)');
+  console.log('  franqueadora.demo@mci.com  (admin local, nível franqueadora)');
+  console.log('  filial.demo@mci.com        (admin local, nível filial - Filial Norte)');
+  console.log('  departamento.demo@mci.com  (admin local, nível departamento - Equipe de Vendas)');
+  console.log('  usuario.demo@mci.com       (usuário comum - só atualização semanal)');
 }
 
 main()
