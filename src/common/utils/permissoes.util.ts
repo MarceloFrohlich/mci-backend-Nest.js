@@ -1,3 +1,5 @@
+import { ForbiddenException } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { UsuarioAutenticado } from '../types/usuario-autenticado.type';
 
 export const ROLE_ADMIN_GLOBAL = 1;
@@ -160,29 +162,86 @@ export function escopoJogoDaPrevidencia(usuario: UsuarioAutenticado) {
   return escopoJogoPorId(usuario);
 }
 
-export function filtroLideres(usuario: UsuarioAutenticado) {
-  if (isAdminGlobal(usuario)) return { deletado_em: null };
-  return { id_franqueadora: usuario.relacao, deletado_em: null };
+// Resolve a franqueadora do usuário subindo a cadeia (departamento -> filial -> franqueadora).
+export async function resolverIdFranqueadora(
+  usuario: UsuarioAutenticado,
+  prisma: PrismaClient,
+): Promise<string | null> {
+  if (!usuario.relacao) return null;
+
+  if (usuario.id_nivel === NIVEL_FRANQUEADORA) return usuario.relacao;
+
+  if (usuario.id_nivel === NIVEL_FILIAL) {
+    const filial = await prisma.filial.findFirst({
+      where: { id_filial: usuario.relacao, deletado_em: null },
+      select: { id_franqueadora: true },
+    });
+    return filial?.id_franqueadora ?? null;
+  }
+
+  const departamento = await prisma.departamento.findFirst({
+    where: { id_departamento: usuario.relacao, deletado_em: null },
+    select: { filial: { select: { id_franqueadora: true, deletado_em: true } } },
+  });
+  if (!departamento?.filial || departamento.filial.deletado_em) return null;
+  return departamento.filial.id_franqueadora;
 }
 
-export function filtroUsuarios(usuario: UsuarioAutenticado) {
+export async function filtroLideres(usuario: UsuarioAutenticado, prisma: PrismaClient) {
   if (isAdminGlobal(usuario)) return { deletado_em: null };
 
+  const idFranqueadora = await resolverIdFranqueadora(usuario, prisma);
+  if (!idFranqueadora) {
+    throw new ForbiddenException('Usuário não tem relação com nenhuma franqueadora');
+  }
+  return { id_franqueadora: idFranqueadora, deletado_em: null };
+}
+
+export async function filtroUsuarios(usuario: UsuarioAutenticado, prisma: PrismaClient) {
+  if (isAdminGlobal(usuario)) return { deletado_em: null };
+
+  const NADA = { id_usuario: { in: [] as string[] } };
+  if (!usuario.relacao) return NADA;
+
   if (usuario.id_nivel === NIVEL_FRANQUEADORA) {
+    const filiais = await prisma.filial.findMany({
+      where: { id_franqueadora: usuario.relacao, deletado_em: null },
+      select: { id_filial: true },
+    });
+    const idsFiliais = filiais.map((f) => f.id_filial);
+    const departamentos = idsFiliais.length
+      ? await prisma.departamento.findMany({
+          where: { id_filial: { in: idsFiliais }, deletado_em: null },
+          select: { id_departamento: true },
+        })
+      : [];
     return {
       deletado_em: null,
       OR: [
         { relacao: usuario.relacao, id_nivel: NIVEL_FRANQUEADORA },
+        { relacao: { in: idsFiliais }, id_nivel: NIVEL_FILIAL },
         {
-          nivel: {
-            id_nivel: { in: [NIVEL_FILIAL, NIVEL_DEPARTAMENTO] },
-          },
+          relacao: { in: departamentos.map((d) => d.id_departamento) },
+          id_nivel: NIVEL_DEPARTAMENTO,
         },
       ],
     };
   }
   if (usuario.id_nivel === NIVEL_FILIAL) {
-    return { relacao: usuario.relacao, id_nivel: NIVEL_FILIAL, deletado_em: null };
+    const departamentos = await prisma.departamento.findMany({
+      where: { id_filial: usuario.relacao, deletado_em: null },
+      select: { id_departamento: true },
+    });
+    return {
+      deletado_em: null,
+      OR: [
+        { relacao: usuario.relacao, id_nivel: NIVEL_FILIAL },
+        {
+          relacao: { in: departamentos.map((d) => d.id_departamento) },
+          id_nivel: NIVEL_DEPARTAMENTO,
+        },
+      ],
+    };
   }
   return { relacao: usuario.relacao, id_nivel: NIVEL_DEPARTAMENTO, deletado_em: null };
 }

@@ -58,7 +58,7 @@ export class UsuariosService {
 
   async listar(solicitante: UsuarioAutenticado) {
     const usuarios = await this.prisma.usuario.findMany({
-      where: filtroUsuarios(solicitante),
+      where: await filtroUsuarios(solicitante, this.prisma),
       include: INCLUDE_USUARIO,
       orderBy: { nome: 'asc' },
     });
@@ -133,7 +133,7 @@ export class UsuariosService {
   }
 
   async filtrar(solicitante: UsuarioAutenticado, dto: FiltrarUsuarioDto) {
-    const where: any = { ...filtroUsuarios(solicitante) };
+    const where: any = { ...(await filtroUsuarios(solicitante, this.prisma)) };
 
     if (dto.nome) where.nome = { contains: dto.nome, mode: 'insensitive' };
     if (dto.email) where.email = { contains: dto.email, mode: 'insensitive' };
