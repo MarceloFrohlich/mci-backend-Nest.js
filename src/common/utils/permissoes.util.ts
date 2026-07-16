@@ -243,7 +243,10 @@ export async function relacaoNaCadeia(
 }
 
 export async function filtroUsuarios(usuario: UsuarioAutenticado, prisma: PrismaClient) {
-  if (isAdminGlobal(usuario)) return { deletado_em: null };
+  // contas admin global são de sistema: não aparecem na gestão de usuários de ninguém
+  if (isAdminGlobal(usuario)) {
+    return { deletado_em: null, id_role: { not: ROLE_ADMIN_GLOBAL } };
+  }
 
   const NADA = { id_usuario: { in: [] as string[] } };
   if (!usuario.relacao) return NADA;

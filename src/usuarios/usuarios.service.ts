@@ -71,18 +71,20 @@ export class UsuariosService {
     return this.resolverRelacoes(usuarios);
   }
 
-  // Admin local só cria/edita usuários não-globais dentro da própria cadeia
+  // Contas admin global são de sistema (seed): ninguém cria nem promove via API.
+  // Admin local só cria/edita usuários dentro da própria cadeia.
   private async validarAlvo(
     solicitante: UsuarioAutenticado,
     idRole: number,
     idNivel: number,
     relacao: string | null,
   ) {
+    if (idRole === ROLE_ADMIN_GLOBAL) {
+      throw new ForbiddenException('Usuários admin global não são gerenciados pelo sistema');
+    }
+
     if (isAdminGlobal(solicitante)) return;
 
-    if (idRole === ROLE_ADMIN_GLOBAL) {
-      throw new ForbiddenException('Apenas o admin global pode gerenciar usuários admin global');
-    }
     if (!(await relacaoNaCadeia(solicitante, idNivel, relacao, this.prisma))) {
       throw new ForbiddenException('O vínculo do usuário deve pertencer à sua cadeia');
     }
