@@ -20,14 +20,14 @@ export class AtualizarUsuarioDto {
   email?: string;
 
   @ApiPropertyOptional({
-    description: '[Opcional] Novo perfil de acesso: 1 = Admin Global, 2 = Admin Local',
-    example: 1,
+    description: '[Opcional] Novo perfil de acesso: 2 = Admin Local, 3 = Usuário',
+    example: 2,
     type: Number,
-    enum: [1, 2],
+    enum: [2, 3],
   })
   @IsOptional()
   @IsInt()
-  @IsIn([1, 2], { message: 'Perfil de acesso inválido' })
+  @IsIn([2, 3], { message: 'Perfil de acesso inválido' })
   id_role?: number;
 
   @ApiPropertyOptional({

@@ -18,32 +18,35 @@ export class CriarUsuarioDto {
   @IsEmail({}, { message: 'E-mail inválido' })
   email: string;
 
-  @ApiProperty({
-    description: '[Obrigatório] Senha inicial do usuário (mínimo 6 caracteres)',
+  @ApiPropertyOptional({
+    description:
+      '[Opcional] Senha inicial (mínimo 6 caracteres). Se omitida, o usuário recebe um convite por e-mail para definir a própria senha (válido por 2 dias)',
     example: 'senha123',
     type: String,
     minLength: 6,
   })
+  @IsOptional()
   @IsString()
   @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
-  senha: string;
+  senha?: string;
 
-  @ApiProperty({
-    description: '[Obrigatório] Confirmação de senha — deve ser idêntica ao campo senha',
+  @ApiPropertyOptional({
+    description: '[Opcional] Confirmação de senha — obrigatória apenas quando senha for informada',
     example: 'senha123',
     type: String,
   })
+  @IsOptional()
   @IsString()
-  confirmacao_senha: string;
+  confirmacao_senha?: string;
 
   @ApiProperty({
-    description: '[Obrigatório] Perfil de acesso: 1 = Admin Global, 2 = Admin Local',
+    description: '[Obrigatório] Perfil de acesso: 2 = Admin Local, 3 = Usuário',
     example: 2,
     type: Number,
-    enum: [1, 2],
+    enum: [2, 3],
   })
   @IsInt()
-  @IsIn([1, 2], { message: 'Perfil de acesso inválido' })
+  @IsIn([2, 3], { message: 'Perfil de acesso inválido' })
   id_role: number;
 
   @ApiProperty({

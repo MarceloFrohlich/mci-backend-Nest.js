@@ -60,6 +60,12 @@ export class UsuariosController {
     return this.usuariosService.remover(id, usuario);
   }
 
+  @ApiOperation({ summary: 'Reenvia o convite de definição de senha (link válido por 2 dias)' })
+  @Post(':id/reenviar-convite')
+  reenviarConvite(@Param('id', ParseUUIDPipe) id: string, @UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.reenviarConvite(id, usuario);
+  }
+
   @ApiOperation({ summary: 'Filtra usuários por nome, e-mail, role ou nível' })
   @Post('filtrar')
   filtrar(@UsuarioAtual() usuario: UsuarioAutenticado, @Body() dto: FiltrarUsuarioDto) {

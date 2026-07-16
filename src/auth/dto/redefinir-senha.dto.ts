@@ -11,14 +11,15 @@ export class RedefinirSenhaDto {
   email: string;
 
   @ApiProperty({
-    description: '[Obrigatório] Código de 6 dígitos recebido por e-mail (válido por 15 minutos, uso único)',
+    description:
+      '[Obrigatório] Código recebido por e-mail: 6 dígitos na recuperação de senha ou token do convite de novo usuário (uso único)',
     example: '482931',
     type: String,
     minLength: 6,
-    maxLength: 6,
+    maxLength: 64,
   })
   @IsString()
-  @Length(6, 6, { message: 'O código deve ter exatamente 6 dígitos' })
+  @Length(6, 64, { message: 'Código inválido' })
   codigo: string;
 
   @ApiProperty({

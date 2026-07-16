@@ -6,7 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import {
   filtroUsuarios,
@@ -22,7 +24,10 @@ const INCLUDE_USUARIO = { role: true, nivel: true };
 
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailer: MailerService,
+  ) {}
 
   private async resolverRelacoes<T extends { relacao: string | null; id_nivel: number }>(
     usuarios: T[],
@@ -103,7 +108,9 @@ export class UsuariosService {
   }
 
   async criar(dto: CriarUsuarioDto, solicitante: UsuarioAutenticado) {
-    if (dto.senha !== dto.confirmacao_senha) {
+    const viaConvite = !dto.senha;
+
+    if (!viaConvite && dto.senha !== dto.confirmacao_senha) {
       throw new BadRequestException('As senhas não coincidem');
     }
 
@@ -114,9 +121,11 @@ export class UsuariosService {
     });
     if (existe) throw new ConflictException('E-mail já cadastrado');
 
-    const senhaHash = await bcrypt.hash(dto.senha, 10);
+    // sem senha informada, gera uma aleatória indecifrável: o acesso só nasce
+    // quando o usuário define a própria senha pelo link do convite
+    const senhaHash = await bcrypt.hash(dto.senha ?? randomBytes(32).toString('hex'), 10);
 
-    return this.prisma.usuario.create({
+    const usuario = await this.prisma.usuario.create({
       data: {
         nome: dto.nome,
         email: dto.email,
@@ -127,6 +136,47 @@ export class UsuariosService {
       },
       include: INCLUDE_USUARIO,
     });
+
+    if (viaConvite) {
+      try {
+        await this.enviarConvite(usuario.id_usuario, usuario.email, usuario.nome);
+      } catch {
+        // usuário criado mesmo assim; o admin pode reenviar o convite pela listagem
+      }
+    }
+
+    return usuario;
+  }
+
+  async reenviarConvite(id: string, solicitante: UsuarioAutenticado) {
+    const alvo = await this.buscarPorId(id, solicitante);
+
+    try {
+      await this.enviarConvite(alvo.id_usuario, alvo.email, alvo.nome);
+    } catch {
+      throw new BadRequestException('Não foi possível enviar o e-mail do convite. Tente novamente.');
+    }
+
+    return { mensagem: 'Convite enviado com sucesso' };
+  }
+
+  // token de uso único válido por 2 dias; invalida convites/códigos anteriores
+  private async enviarConvite(idUsuario: string, email: string, nome: string) {
+    const codigo = randomBytes(24).toString('hex');
+    const expiraEm = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.tokenRecuperacaoSenha.updateMany({
+      where: { id_usuario: idUsuario, usado_em: null },
+      data: { usado_em: new Date() },
+    });
+
+    await this.prisma.tokenRecuperacaoSenha.create({
+      data: { id_usuario: idUsuario, codigo, expira_em: expiraEm },
+    });
+
+    const link = `${process.env.FRONT_URL}/definir-senha?email=${encodeURIComponent(email)}&codigo=${codigo}`;
+
+    await this.mailer.enviarConvite(email, nome, link);
   }
 
   async atualizar(id: string, dto: AtualizarUsuarioDto, solicitante: UsuarioAutenticado) {
