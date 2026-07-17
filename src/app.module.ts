@@ -15,6 +15,7 @@ import { ObservacoesModule } from './observacoes/observacoes.module';
 import { GraficosModule } from './graficos/graficos.module';
 import { RelatoriosModule } from './relatorios/relatorios.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     GraficosModule,
     RelatoriosModule,
     DashboardModule,
+    LogsModule,
   ],
 })
 export class AppModule {}

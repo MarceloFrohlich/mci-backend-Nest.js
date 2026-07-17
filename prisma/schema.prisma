@@ -281,3 +281,17 @@ model JogoStatus {
 
   @@map("jogos_status")
 }
+
+model LogRequisicao {
+  id_log        String   @id @default(uuid())
+  data_hora     DateTime @default(now())
+  metodo        String
+  rota          String
+  status        Int
+  sucesso       Boolean
+  mensagem_erro String?  @db.Text
+  usuario       String?
+
+  @@index([data_hora])
+  @@map("logs_requisicao")
+}
