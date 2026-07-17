@@ -1,14 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
 
-  private get resend(): Resend {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) throw new Error('RESEND_API_KEY não configurada');
-    return new Resend(apiKey);
+  private get transporter(): nodemailer.Transporter {
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) throw new Error('SMTP não configurado');
+
+    return nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: Number(SMTP_PORT ?? 465),
+      secure: process.env.SMTP_SECURE !== 'false',
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+    });
+  }
+
+  private async enviar(destinatario: string, assunto: string, html: string) {
+    try {
+      await this.transporter.sendMail({
+        from: process.env.MAIL_FROM ?? process.env.SMTP_USER,
+        to: destinatario,
+        subject: assunto,
+        html,
+      });
+    } catch (erro) {
+      this.logger.error(`Falha ao enviar e-mail para ${destinatario}: ${(erro as Error).message}`);
+      throw erro;
+    }
   }
 
   async enviarCodigoRecuperacao(destinatario: string, nome: string, codigo: string) {
@@ -37,17 +57,7 @@ export class MailerService {
       </div>
     `;
 
-    const { error } = await this.resend.emails.send({
-      from: process.env.MAIL_FROM ?? 'MCI 2.0 <onboarding@resend.dev>',
-      to: [destinatario],
-      subject: `${codigo} — Código de recuperação de senha MCI 2.0`,
-      html,
-    });
-
-    if (error) {
-      this.logger.error(`Falha ao enviar e-mail para ${destinatario}: ${JSON.stringify(error)}`);
-      throw new Error(error.message);
-    }
+    await this.enviar(destinatario, `${codigo} — Código de recuperação de senha MCI 2.0`, html);
   }
 
   async enviarConvite(destinatario: string, nome: string, link: string) {
@@ -82,16 +92,6 @@ export class MailerService {
       </div>
     `;
 
-    const { error } = await this.resend.emails.send({
-      from: process.env.MAIL_FROM ?? 'MCI 2.0 <onboarding@resend.dev>',
-      to: [destinatario],
-      subject: 'Convite: sua conta no MCI 2.0 está pronta — defina sua senha',
-      html,
-    });
-
-    if (error) {
-      this.logger.error(`Falha ao enviar convite para ${destinatario}: ${JSON.stringify(error)}`);
-      throw new Error(error.message);
-    }
+    await this.enviar(destinatario, 'Convite: sua conta no MCI 2.0 está pronta — defina sua senha', html);
   }
 }
