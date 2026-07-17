@@ -3,7 +3,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { LogsService } from './logs.service';
 
-// registra escritas e qualquer erro; GETs bem-sucedidos ficam de fora pelo volume
+// registra escritas e seus erros; GETs ficam de fora pelo volume
 @Injectable()
 export class LogsInterceptor implements NestInterceptor {
   constructor(private readonly logs: LogsService) {}
@@ -12,10 +12,10 @@ export class LogsInterceptor implements NestInterceptor {
     const requisicao = context.switchToHttp().getRequest();
     const { method, url } = requisicao;
 
+    if (method === 'GET') return next.handle();
+
     return next.handle().pipe(
       tap(() => {
-        if (method === 'GET') return;
-
         this.logs.registrar({
           metodo: method,
           rota: url,
