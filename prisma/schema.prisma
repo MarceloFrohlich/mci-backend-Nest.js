@@ -284,7 +284,7 @@ model JogoStatus {
 
 model LogRequisicao {
   id_log        String   @id @default(uuid())
-  data_hora     DateTime @default(now())
+  data_hora     DateTime @default(now()) @db.Timestamptz(3)
   metodo        String
   rota          String
   status        Int
