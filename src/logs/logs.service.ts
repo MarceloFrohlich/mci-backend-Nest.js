@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DIAS_RETENCAO = 90;
@@ -11,6 +12,7 @@ interface RegistroLog {
   sucesso: boolean;
   mensagem_erro?: string;
   usuario?: string;
+  payload?: Prisma.InputJsonObject;
 }
 
 @Injectable()

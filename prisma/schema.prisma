@@ -291,6 +291,7 @@ model LogRequisicao {
   sucesso       Boolean
   mensagem_erro String?  @db.Text
   usuario       String?
+  payload       Json?
 
   @@index([data_hora])
   @@map("logs_requisicao")
