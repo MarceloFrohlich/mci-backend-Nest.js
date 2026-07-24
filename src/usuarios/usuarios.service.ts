@@ -112,6 +112,10 @@ export class UsuariosService {
   async criar(dto: CriarUsuarioDto, solicitante: UsuarioAutenticado) {
     exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
 
+    if (!isAdminGlobal(solicitante) && dto.id_nivel === solicitante.id_nivel) {
+      throw new ForbiddenException('Só é possível cadastrar usuários de nível abaixo do seu');
+    }
+
     const viaConvite = !dto.senha;
 
     if (!viaConvite && dto.senha !== dto.confirmacao_senha) {
