@@ -11,8 +11,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import {
+  exigirNivel,
   filtroUsuarios,
   isAdminGlobal,
+  NIVEL_FRANQUEADORA,
   relacaoNaCadeia,
   ROLE_ADMIN_GLOBAL,
 } from '../common/utils/permissoes.util';
@@ -108,6 +110,8 @@ export class UsuariosService {
   }
 
   async criar(dto: CriarUsuarioDto, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
+
     const viaConvite = !dto.senha;
 
     if (!viaConvite && dto.senha !== dto.confirmacao_senha) {
@@ -149,6 +153,7 @@ export class UsuariosService {
   }
 
   async reenviarConvite(id: string, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
     const alvo = await this.buscarPorId(id, solicitante);
 
     try {
@@ -180,6 +185,7 @@ export class UsuariosService {
   }
 
   async atualizar(id: string, dto: AtualizarUsuarioDto, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
     const alvo = await this.buscarPorId(id, solicitante);
 
     if (!isAdminGlobal(solicitante) && alvo.id_role === ROLE_ADMIN_GLOBAL) {
@@ -209,6 +215,7 @@ export class UsuariosService {
   }
 
   async remover(id: string, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
     const alvo = await this.buscarPorId(id, solicitante);
 
     if (!isAdminGlobal(solicitante) && alvo.id_role === ROLE_ADMIN_GLOBAL) {

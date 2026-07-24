@@ -13,6 +13,17 @@ export function isAdminGlobal(usuario: UsuarioAutenticado): boolean {
   return usuario.id_role === ROLE_ADMIN_GLOBAL;
 }
 
+// Restringe uma operação de escrita a solicitantes de determinado(s) nível(is)
+// da hierarquia. Admin global sempre pode. Usar nas criações/edições/remoções
+// que seguem a cadeia de cadastro (franqueadora > filial/departamento > usuário).
+export function exigirNivel(usuario: UsuarioAutenticado, niveisPermitidos: number[]): void {
+  if (isAdminGlobal(usuario)) return;
+
+  if (!niveisPermitidos.includes(usuario.id_nivel)) {
+    throw new ForbiddenException('Seu nível não tem permissão para esta operação');
+  }
+}
+
 export function filtroFranqueadoras(usuario: UsuarioAutenticado) {
   if (isAdminGlobal(usuario)) return { deletado_em: null };
 

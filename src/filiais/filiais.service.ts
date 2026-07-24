@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
-import { filtroFiliais, filtroFranqueadoras } from '../common/utils/permissoes.util';
+import { exigirNivel, filtroFiliais, filtroFranqueadoras, NIVEL_FRANQUEADORA } from '../common/utils/permissoes.util';
 import { CriarFilialDto, AtualizarFilialDto, FiltrarFilialDto } from './dto/filial.dto';
 
 const INCLUDE_FILIAL = { franqueadora: true };
@@ -28,6 +28,8 @@ export class FiliaisService {
   }
 
   async criar(dto: CriarFilialDto, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
+
     const franqueadora = await this.prisma.franqueadora.findFirst({
       where: { AND: [{ id_franqueadora: dto.id_franqueadora, deletado_em: null }, filtroFranqueadoras(solicitante)] },
       select: { id_franqueadora: true },
@@ -41,6 +43,7 @@ export class FiliaisService {
   }
 
   async atualizar(id: string, dto: AtualizarFilialDto, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
     await this.buscarPorId(id, solicitante);
     return this.prisma.filial.update({
       where: { id_filial: id },
@@ -50,6 +53,7 @@ export class FiliaisService {
   }
 
   async remover(id: string, solicitante: UsuarioAutenticado) {
+    exigirNivel(solicitante, [NIVEL_FRANQUEADORA]);
     await this.buscarPorId(id, solicitante);
 
     const departamentosAtivos = await this.prisma.departamento.findMany({
