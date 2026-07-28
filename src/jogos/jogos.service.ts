@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { differenceInWeeks } from 'date-fns';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
+import { LideresService } from '../lideres/lideres.service';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { filtroJogos, escopoJogoPorId, escopoCopaPorId } from '../common/utils/permissoes.util';
 import { definirStatusMeta, gerarSemanas, mensagemMetaNaoInteira, sugerirMetaInteira } from '../common/utils/calculos.util';
@@ -43,7 +44,27 @@ function enriquecerJogo(jogo: any) {
 
 @Injectable()
 export class JogosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lideresService: LideresService,
+  ) {}
+
+  // Resolve o líder responsável a partir de id_lider (líder não usuário) ou
+  // id_usuario_lider (usuário do sistema, vira um Lider vinculado sob o capô).
+  // Os dois campos são mutuamente exclusivos.
+  private async resolverIdLider(
+    dto: { id_lider?: string; id_usuario_lider?: string },
+    solicitante: UsuarioAutenticado,
+  ): Promise<string | undefined> {
+    if (dto.id_lider && dto.id_usuario_lider) {
+      throw new BadRequestException('Selecione apenas um responsável: líder ou usuário');
+    }
+    if (dto.id_usuario_lider) {
+      const lider = await this.lideresService.garantirLiderParaUsuario(dto.id_usuario_lider, solicitante);
+      return lider.id_lider;
+    }
+    return dto.id_lider;
+  }
 
   async listar(solicitante: UsuarioAutenticado) {
     const jogos = await this.prisma.jogo.findMany({
@@ -90,6 +111,11 @@ export class JogosService {
       }
     }
 
+    // Resolvido uma única vez fora do Promise.all abaixo: evita criar/upsertar o
+    // Lider vinculado ao usuário em paralelo (o id_usuario é @unique e uma corrida
+    // entre as cópias por copa violaria essa constraint).
+    const idLider = await this.resolverIdLider(dto, solicitante);
+
     return Promise.all(
       copas.map((idCopa) =>
         this.prisma.$transaction(async (tx) => {
@@ -98,7 +124,7 @@ export class JogosService {
           const jogo = await tx.jogo.create({
             data: {
               id_copa: idCopa,
-              id_lider: dto.id_lider ?? null,
+              id_lider: idLider ?? null,
               nome: dto.nome,
               verbo: dto.verbo ?? null,
               medida: dto.medida ?? null,
@@ -155,7 +181,9 @@ export class JogosService {
 
     const dados: any = { data_atualizacao: new Date() };
     if (dto.nome !== undefined) dados.nome = dto.nome;
-    if (dto.id_lider !== undefined) dados.id_lider = dto.id_lider;
+    if (dto.id_lider !== undefined || dto.id_usuario_lider !== undefined) {
+      dados.id_lider = (await this.resolverIdLider(dto, solicitante)) ?? null;
+    }
     if (dto.verbo !== undefined) dados.verbo = dto.verbo;
     if (dto.medida !== undefined) dados.medida = dto.medida;
     if (dto.de !== undefined) dados.de = dto.de;

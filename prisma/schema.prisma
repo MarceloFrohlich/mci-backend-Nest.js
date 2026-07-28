@@ -84,6 +84,7 @@ model Usuario {
   nivel              NivelUsuario            @relation(fields: [id_nivel], references: [id_nivel])
   anos               UsuarioAno[]
   tokens_recuperacao TokenRecuperacaoSenha[]
+  lider_vinculado    Lider?
 
   @@index([email])
   @@index([id_role])
@@ -148,12 +149,14 @@ model Copa {
 model Lider {
   id_lider         String    @id @default(uuid())
   id_franqueadora  String?
+  id_usuario       String?   @unique
   nome             String    @db.Text
   data_criacao     DateTime  @default(now())
   data_atualizacao DateTime?
   deletado_em      DateTime?
 
   franqueadora Franqueadora? @relation(fields: [id_franqueadora], references: [id_franqueadora])
+  usuario      Usuario?      @relation(fields: [id_usuario], references: [id_usuario])
   copas        Copa[]
   jogos        Jogo[]
 

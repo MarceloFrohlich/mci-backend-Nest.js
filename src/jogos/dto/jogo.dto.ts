@@ -59,13 +59,23 @@ export class CriarJogoDto {
   ids_copas: string[];
 
   @ApiPropertyOptional({
-    description: '[Opcional] UUID do líder responsável pelo jogo',
+    description: '[Opcional] UUID do líder (não usuário) responsável pelo jogo. Mutuamente exclusivo com id_usuario_lider.',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     type: String,
   })
   @IsOptional()
   @IsUUID()
   id_lider?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '[Opcional] UUID de um Usuario do sistema para atuar como líder responsável pelo jogo. Mutuamente exclusivo com id_lider.',
+    example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+    type: String,
+  })
+  @IsOptional()
+  @IsUUID()
+  id_usuario_lider?: string;
 
   @ApiProperty({
     description: '[Obrigatório] Nome do jogo',
@@ -159,13 +169,23 @@ export class CriarJogoDto {
 
 export class AtualizarJogoDto {
   @ApiPropertyOptional({
-    description: '[Opcional] UUID do novo líder responsável pelo jogo',
+    description: '[Opcional] UUID do novo líder (não usuário) responsável pelo jogo. Mutuamente exclusivo com id_usuario_lider.',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     type: String,
   })
   @IsOptional()
   @IsUUID()
   id_lider?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '[Opcional] UUID de um Usuario do sistema para atuar como novo líder responsável pelo jogo. Mutuamente exclusivo com id_lider.',
+    example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+    type: String,
+  })
+  @IsOptional()
+  @IsUUID()
+  id_usuario_lider?: string;
 
   @ApiPropertyOptional({
     description: '[Opcional] Novo nome do jogo',
