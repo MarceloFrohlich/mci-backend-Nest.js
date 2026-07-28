@@ -107,7 +107,10 @@ export function filtroCopas(usuario: UsuarioAutenticado, anoAtivo: number) {
 export function filtroJogos(usuario: UsuarioAutenticado, anoAtivo: number) {
   const filtroBase = {
     deletado_em: null,
-    data_inicio: { gte: new Date(`${anoAtivo}-01-01`) },
+    data_inicio: {
+      gte: new Date(`${anoAtivo}-01-01`),
+      lte: new Date(`${anoAtivo}-12-31`),
+    },
   };
 
   if (isAdminGlobal(usuario)) return filtroBase;
