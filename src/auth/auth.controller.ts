@@ -14,6 +14,7 @@ import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
 import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { IgnorarAnoVigente } from '../common/decorators/ignorar-ano-vigente.decorator';
 import { UsuarioAtual } from '../common/decorators/usuario-atual.decorator';
 import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 import { IsInt } from 'class-validator';
@@ -59,6 +60,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout (invalida sessão no cliente)' })
   @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
+  @IgnorarAnoVigente()
   @Post('logout')
   logout() {
     return { mensagem: 'Logout realizado com sucesso' };
@@ -75,9 +77,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Muda o ano ativo do usuário' })
   @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
+  @IgnorarAnoVigente()
   @Patch('ano')
   mudarAno(@UsuarioAtual() usuario: UsuarioAutenticado, @Body() dto: MudarAnoDto) {
     return this.authService.mudarAno(usuario.id_usuario, dto.ano);
+  }
+
+  @ApiOperation({
+    summary: 'Lista os anos disponíveis para troca',
+    description:
+      'Ano atual do sistema + ano ativo do usuário + anos com copas cadastradas no escopo dele.',
+  })
+  @ApiBearerAuth('JWT')
+  @UseGuards(JwtAuthGuard)
+  @Get('anos')
+  anosDisponiveis(@UsuarioAtual() usuario: UsuarioAutenticado) {
+    return this.authService.anosDisponiveis(usuario);
   }
 
   @ApiOperation({
@@ -137,6 +152,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Senha atual incorreta ou senhas não coincidem' })
   @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
+  @IgnorarAnoVigente()
   @Patch('alterar-senha')
   alterarSenha(@UsuarioAtual() usuario: UsuarioAutenticado, @Body() dto: AlterarSenhaDto) {
     return this.authService.alterarSenha(usuario.id_usuario, dto);

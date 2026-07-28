@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AnoVigenteInterceptor } from './common/interceptors/ano-vigente.interceptor';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -39,5 +41,6 @@ import { LogsModule } from './logs/logs.module';
     DashboardModule,
     LogsModule,
   ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: AnoVigenteInterceptor }],
 })
 export class AppModule {}

@@ -13,7 +13,14 @@ import { LoginDto } from './dto/login.dto';
 import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
 import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto';
-import { NIVEL_DEPARTAMENTO, NIVEL_FILIAL, NIVEL_FRANQUEADORA, ROLE_ADMIN_GLOBAL } from '../common/utils/permissoes.util';
+import {
+  escopoCopaPorId,
+  NIVEL_DEPARTAMENTO,
+  NIVEL_FILIAL,
+  NIVEL_FRANQUEADORA,
+  ROLE_ADMIN_GLOBAL,
+} from '../common/utils/permissoes.util';
+import { UsuarioAutenticado } from '../common/types/usuario-autenticado.type';
 
 @Injectable()
 export class AuthService {
@@ -113,6 +120,20 @@ export class AuthService {
       ano_ativo: anoAtivo,
       hierarquia,
     };
+  }
+
+  async anosDisponiveis(usuario: UsuarioAutenticado): Promise<number[]> {
+    const anoAtual = new Date().getFullYear();
+
+    const copas = await this.prisma.copa.findMany({
+      where: escopoCopaPorId(usuario),
+      select: { inicio: true },
+    });
+
+    const anos = new Set<number>([anoAtual, usuario.ano_ativo]);
+    copas.forEach((copa) => anos.add(copa.inicio.getFullYear()));
+
+    return Array.from(anos).sort((a, b) => b - a);
   }
 
   async mudarAno(idUsuario: string, ano: number) {
