@@ -19,13 +19,14 @@ export class CriarCopaDto {
   @IsUUID('4', { each: true })
   ids_departamentos: string[];
 
-  @ApiProperty({
-    description: '[Obrigatório] UUID do líder responsável pela copa',
+  @ApiPropertyOptional({
+    description: '[Opcional] UUID do líder responsável pela copa',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     type: String,
   })
+  @IsOptional()
   @IsUUID('4')
-  id_lider: string;
+  id_lider?: string;
 
   @ApiProperty({
     description: '[Obrigatório] Data de início (formato ISO 8601)',

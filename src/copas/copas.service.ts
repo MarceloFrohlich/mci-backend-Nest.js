@@ -49,7 +49,7 @@ export class CopasService {
           data: {
             nome: dto.nome,
             id_departamento: idDept,
-            id_lider: dto.id_lider,
+            id_lider: dto.id_lider ?? null,
             inicio: new Date(dto.inicio),
             fim: new Date(dto.fim),
             objetivo: dto.objetivo ?? null,
