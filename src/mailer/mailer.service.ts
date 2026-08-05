@@ -26,7 +26,13 @@ export class MailerService {
         html,
       });
     } catch (erro) {
-      this.logger.error(`Falha ao enviar e-mail para ${destinatario}: ${(erro as Error).message}`);
+      const e = erro as Error & { responseCode?: number; code?: string };
+      this.logger.error(`Falha ao enviar e-mail para ${destinatario}: ${e.message}`);
+      if (e.responseCode === 535 || e.code === 'EAUTH') {
+        this.logger.error(
+          'Autenticação SMTP recusada — confira SMTP_USER/SMTP_PASS (sem aspas) no ambiente de produção e se o IP do servidor está liberado para envio no painel do provedor de e-mail.',
+        );
+      }
       throw erro;
     }
   }
